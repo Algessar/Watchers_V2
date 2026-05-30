@@ -1775,10 +1775,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1913763943}
   - component: {fileID: 1913763942}
-  - component: {fileID: 1913763946}
+  - component: {fileID: 1913763948}
   - component: {fileID: 1913763941}
   - component: {fileID: 1913763940}
-  - component: {fileID: 1913763944}
+  - component: {fileID: 1913763947}
   - component: {fileID: 1913763945}
   m_Layer: 0
   m_Name: PlayerParent
@@ -1824,9 +1824,10 @@ MonoBehaviour:
   idle: {fileID: 8130951744210091813, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
   walk: {fileID: 8699028115965047489, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
   run: {fileID: 3638018725583969807, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  walkStartSpeed: 0.2
+  runStartSpeed: 0.7
   moveDirection: {x: 0, y: 0, z: 0}
   moveSpeed: 5
-  _baseRotSpeed: 0
 --- !u!143 &1913763942
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1869,7 +1870,7 @@ Transform:
   - {fileID: 2107332910}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1913763944
+--- !u!114 &1913763945
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1878,31 +1879,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1913763939}
   m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66a6cae629b841c4092ee236f3a7e7fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Combat
-  vomTagClip: {fileID: 7400000, guid: 153e63db0a6ddb54e9e97f56a0fb0d81, type: 2}
-  pflugClip: {fileID: 7400000, guid: f9a37a0677baf7c42af450b700b95564, type: 2}
-  alberClip: {fileID: 7400000, guid: 0ba0215f6173bbd41b4a9c6bdd629354, type: 2}
-  ochsClip: {fileID: 7400000, guid: f8a6762ea1f25ad40a08789aa871d8c5, type: 2}
-  ironGateClip: {fileID: 7400000, guid: c0bf399e2a7b7fd49b2a4335f5277a91, type: 2}
-  langortClip: {fileID: 0}
-  _blendDuration: 0.05
---- !u!114 &1913763945
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1913763939}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 495d07c0ef1d7a54aba156f5293572c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BoneCollector
   _skinnedMeshRenderer: {fileID: 94445101}
   bones: []
---- !u!114 &1913763946
+--- !u!114 &1913763947
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1911,11 +1893,34 @@ MonoBehaviour:
   m_GameObject: {fileID: 1913763939}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6a11c9213dd04cb478d25884f5f1269b, type: 3}
+  m_Script: {fileID: 11500000, guid: 3a03ac862a6a440198385765a5cf244b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AnimationSystem
-  animator: {fileID: 0}
-  upperBodyMask: {fileID: 31900000, guid: 34b87fb9c2c6ed4418d1066dcd333bc4, type: 2}
+  m_EditorClassIdentifier: Assembly-CSharp::StanceController
+--- !u!114 &1913763948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913763939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd1e61d85e6711b4aaa1624003f89f93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimationSystem_v2
+  _idleClip: {fileID: 8130951744210091813, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _walkClip: {fileID: 8699028115965047489, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _runClip: {fileID: 3638018725583969807, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  footIk: 0
+  handIk: 0
+  _vomTagClip: {fileID: 8029815457801315886, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _pflugClip: {fileID: 2385677452906802121, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _alberClip: {fileID: -5986454702758642862, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _ochsClip: {fileID: -58502521603112244, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _ironGateClip: {fileID: 5608109676326280882, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  _upperBodyMask: {fileID: 31900000, guid: 34b87fb9c2c6ed4418d1066dcd333bc4, type: 2}
+  _stanceBlendDuration: 0.02
+  _runThreshold: 0.6
 --- !u!1 &1996843780
 GameObject:
   m_ObjectHideFlags: 0

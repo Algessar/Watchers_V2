@@ -40,7 +40,7 @@ public class Movement : MonoBehaviour
         // _gamepad = Gamepad.current;
         _controller = GetComponent<CharacterController>();
         _input = GetComponent<PlayerInput>();
-        _animSystemV1 = GetComponent<AnimationSystem_v1>();
+        // _animSystemV1 = GetComponent<AnimationSystem_v1>();
 
         _camera = Camera.main;
 
@@ -49,13 +49,13 @@ public class Movement : MonoBehaviour
             Debug.Log("Gamepad is null");
         }
 
-        _idleId = _animSystemV1.RegisterClip(idle, 0);
-        _walkId = _animSystemV1.RegisterClip(walk, 0);
-        _runId = _animSystemV1.RegisterClip(run, 0);
-
-        Debug.Log($"IdleId: {_idleId}, WalkId: {_walkId}, RunId: {_runId}");
-        
-        _animSystemV1.SetClipWeight(_idleId, 1f);
+        // _idleId = _animSystemV1.RegisterClip(idle, 0);
+        // _walkId = _animSystemV1.RegisterClip(walk, 0);
+        // _runId = _animSystemV1.RegisterClip(run, 0);
+        //
+        // Debug.Log($"IdleId: {_idleId}, WalkId: {_walkId}, RunId: {_runId}");
+        //
+        // _animSystemV1.SetClipWeight(_idleId, 1f);
 
     }
 
@@ -65,38 +65,38 @@ public class Movement : MonoBehaviour
 
         Controller(moveDirection * (moveSpeed * Time.deltaTime));
 
-        float speed = _input.moveAmount; // 0...1
-
-        // Compute continuous weights
-        float idleWeight = 0f;
-        float walkWeight = 0f;
-        float runWeight  = 0f;
-
-        if (speed < walkStartSpeed)
-        {
-            // Only idle, full weight = 1, others 0
-            idleWeight = 1f;
-        }
-        else if (speed < runStartSpeed)
-        {
-            // Blend between idle and walk
-            float t = Mathf.InverseLerp(walkStartSpeed, runStartSpeed, speed);
-            // But we want idle to fade out and walk to fade in
-            idleWeight = 1f - t;
-            walkWeight = t;
-        }
-        else
-        {
-            // Blend between walk and run
-            float t = Mathf.InverseLerp(runStartSpeed, 1f, speed);
-            walkWeight = 1f - t;
-            runWeight  = t;
-        }
-
-        // Apply weights directly (no timer, no crossfade)
-        _animSystemV1.SetClipWeight(_idleId, idleWeight);
-        _animSystemV1.SetClipWeight(_walkId, walkWeight);
-        _animSystemV1.SetClipWeight(_runId,  runWeight);
+        // float speed = _input.moveAmount; // 0...1
+        //
+        // // Compute continuous weights
+        // float idleWeight = 0f;
+        // float walkWeight = 0f;
+        // float runWeight  = 0f;
+        //
+        // if (speed < walkStartSpeed)
+        // {
+        //     // Only idle, full weight = 1, others 0
+        //     idleWeight = 1f;
+        // }
+        // else if (speed < runStartSpeed)
+        // {
+        //     // Blend between idle and walk
+        //     float t = Mathf.InverseLerp(walkStartSpeed, runStartSpeed, speed);
+        //     // But we want idle to fade out and walk to fade in
+        //     idleWeight = 1f - t;
+        //     walkWeight = t;
+        // }
+        // else
+        // {
+        //     // Blend between walk and run
+        //     float t = Mathf.InverseLerp(runStartSpeed, 1f, speed);
+        //     walkWeight = 1f - t;
+        //     runWeight  = t;
+        // }
+        //
+        // // Apply weights directly (no timer, no crossfade)
+        // _animSystemV1.SetClipWeight(_idleId, idleWeight);
+        // _animSystemV1.SetClipWeight(_walkId, walkWeight);
+        // _animSystemV1.SetClipWeight(_runId,  runWeight);
     }
 
 
