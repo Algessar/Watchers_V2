@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &21383090 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1559917839539662953, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  m_PrefabInstance: {fileID: 629943542}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &94445101 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -1700628015787240113, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
@@ -165,7 +170,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 272728537}
-  - component: {fileID: 272728538}
   m_Layer: 0
   m_Name: Managers
   m_TagString: Untagged
@@ -189,22 +193,6 @@ Transform:
   - {fileID: 1130060580}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &272728538
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 272728536}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1df645465c0222546aa5f7a1e789aafe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JsonDebugLogWriter
-  _writeLogs: 1
-  _includeStackTrace: 1
-  _maxLogsPerFrame: 100
-  _logFilePath: G:\UnityProjects\Watchers_V2\Assets\Scripts\Debug
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -831,6 +819,11 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 651768034}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &767458284 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4908572856421906939, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
+  m_PrefabInstance: {fileID: 629943542}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1797,6 +1790,7 @@ GameObject:
   - component: {fileID: 1913763940}
   - component: {fileID: 1913763947}
   - component: {fileID: 1913763945}
+  - component: {fileID: 1913763949}
   m_Layer: 0
   m_Name: PlayerParent
   m_TagString: Untagged
@@ -1940,9 +1934,25 @@ MonoBehaviour:
   _upperBodyMask: {fileID: 31900000, guid: 34b87fb9c2c6ed4418d1066dcd333bc4, type: 2}
   _stanceBlendDuration: 0.09
   _runThreshold: 0.27
+  _stripScaleCurvesFromPlayableClips: 1
+  _maxScaleCurveSamplesToLog: 8
   _debugAnimationWeights: 1
   _debugLogInterval: 0.5
   _debugScaleProbeRoot: {fileID: 1913763943}
+--- !u!114 &1913763949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913763939}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66a6cae629b841c4092ee236f3a7e7fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat
+  WeaponMaster: {fileID: 21383090}
+  Chest: {fileID: 767458284}
 --- !u!1 &1996843780
 GameObject:
   m_ObjectHideFlags: 0

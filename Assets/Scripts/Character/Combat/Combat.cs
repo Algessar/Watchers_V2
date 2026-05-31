@@ -7,9 +7,15 @@ public class Combat : MonoBehaviour
 {
     // Targeting
     // Weapon IK
-    
-    
-    
+
+    public Transform WeaponMaster;
+    public Transform Chest;
+
+
+    private void Start()
+    {
+        WeaponMaster.SetParent(Chest, false);
+    }
 }
 
 public class Weapon : MonoBehaviour

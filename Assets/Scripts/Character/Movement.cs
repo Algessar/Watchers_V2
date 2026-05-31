@@ -11,29 +11,27 @@ public class Movement : MonoBehaviour
 {
     private CharacterController _controller;
     private Camera _camera;
-    private Vector3 _targetDirection;
-
-    private AnimationSystem_v1 _animSystemV1;
-    private int _idleId;
-    private int _walkId;
-    private int _runId;
-    
-    public AnimationClip idle;
-    public AnimationClip walk;
-    public AnimationClip run;
 
     //Input
     private PlayerInput _input;
     private Gamepad _gamepad;
 
-    
+
     // Tweak these thresholds to your liking
+    private const float MinDirectionSqrMagnitude = 0.0001f;
+
     [SerializeField] private float walkStartSpeed = 0.2f;
     [SerializeField] private float runStartSpeed = 0.7f;
-    
+
     public Vector3 moveDirection;
     public float moveSpeed = 0.5f;
-    private float _baseRotationSpeed;
+
+    [Header("Steering")] [SerializeField] private float _rotationSpeed = 720f;
+
+    [SerializeField] private bool _faceCameraForwardWhenIdle = false;
+    [SerializeField] private bool debugSteering = false;
+
+
 
     private void Start()
     {
@@ -41,7 +39,6 @@ public class Movement : MonoBehaviour
         // _gamepad = Gamepad.current;
         _controller = GetComponent<CharacterController>();
         _input = GetComponent<PlayerInput>();
-        // _animSystemV1 = GetComponent<AnimationSystem_v1>();
 
         _camera = Camera.main;
 
@@ -50,22 +47,15 @@ public class Movement : MonoBehaviour
             Debug.Log("Gamepad is null");
         }
 
-        // _idleId = _animSystemV1.RegisterClip(idle, 0);
-        // _walkId = _animSystemV1.RegisterClip(walk, 0);
-        // _runId = _animSystemV1.RegisterClip(run, 0);
-        //
-        // Debug.Log($"IdleId: {_idleId}, WalkId: {_walkId}, RunId: {_runId}");
-        //
-        // _animSystemV1.SetClipWeight(_idleId, 1f);
 
     }
 
     public void Update()
     {
-        moveDirection = CalculateCamRelativeDir();
+        moveDirection = CalculateCameraRelativeMoveDirection();
 
         Controller(moveDirection * (moveSpeed * Time.deltaTime));
-        RotatePlayer(moveDirection);
+        RotatePlayer(GetFacingDirection(moveDirection));
     }
 
 
@@ -82,34 +72,64 @@ public class Movement : MonoBehaviour
     }
 
 
-    Vector3 CalculateCamRelativeDir()
+    Vector3 CalculateCameraRelativeMoveDirection()
     {
-        var inputDirection = NormalizedMoveVector();
 
-        Transform camTransform = _camera.transform;
+        Vector2 input = Vector2.ClampMagnitude(_input.direction, 1f);
 
-        Vector3 camForward = camTransform.forward;
-        Vector3 camRight = camTransform.right;
+        if (input.sqrMagnitude <= MinDirectionSqrMagnitude) return Vector3.zero;
 
-        Vector3 moveDir = Vector3.zero;
+        Vector3 forward = GetPlanarCameraForward();
+        Vector3 right = GetPlanarCameraRight();
 
-        moveDir = camForward * inputDirection.z + camRight * inputDirection.x;
-        moveDir.Normalize();
-        moveDir.y = 0;
-        return moveDir;
+        Vector3 direction = forward * input.y + right * input.x;
+        return Vector3.ClampMagnitude(direction, 1f);
+
     }
-    
-    public Vector3 RotatePlayer(Vector3 targetDirection)
+
+    private Vector3 GetFacingDirection(Vector3 currentMoveDirection)
     {
-        if (_targetDirection.sqrMagnitude > 0.01f)
+        if (currentMoveDirection.sqrMagnitude > MinDirectionSqrMagnitude)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(_targetDirection, Vector3.up);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation, targetRotation, 
-                _baseRotationSpeed * Time.deltaTime);
+            return currentMoveDirection;
         }
 
-        return _targetDirection;
+        return _faceCameraForwardWhenIdle ? GetPlanarCameraForward() : Vector3.zero;
     }
 
+    private Vector3 GetPlanarCameraForward()
+    {
+        Transform referenceTransform = _camera != null ? _camera.transform : transform;
+        Vector3 forward = Vector3.ProjectOnPlane(referenceTransform.forward, Vector3.up);
+        return forward.sqrMagnitude > MinDirectionSqrMagnitude ? forward.normalized : transform.forward;
+    }
+
+    private Vector3 GetPlanarCameraRight()
+    {
+        Transform referenceTransform = _camera != null ? _camera.transform : transform;
+        Vector3 right = Vector3.ProjectOnPlane(referenceTransform.right, Vector3.up);
+        return right.sqrMagnitude > MinDirectionSqrMagnitude ? right.normalized : transform.right;
+    }
+
+    public Vector3 RotatePlayer(Vector3 targetDirection)
+    {
+        targetDirection = Vector3.ProjectOnPlane(targetDirection, Vector3.up);
+
+        if (targetDirection.sqrMagnitude <= MinDirectionSqrMagnitude) return transform.forward;
+
+        Quaternion targetRotation = Quaternion.LookRotation(targetDirection.normalized, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation,
+            targetRotation,
+            _rotationSpeed * Time.deltaTime);
+
+        if (debugSteering)
+        {
+            Debug.Log(
+                $"[Movement] Steering target={targetDirection.normalized} rotation={transform.eulerAngles} moveDirection={moveDirection} input={_input.direction}",
+                this);
+
+        }
+        return targetDirection.normalized;
+    }
 }
