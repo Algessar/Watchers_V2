@@ -1,11 +1,18 @@
 using System;
+
+using System.Text;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 public class AnimationSystem_v2 : MonoBehaviour
 {
+
+    private const int LocomotionLayer = 0;
+    private const int CombatLayer = 1;
+    
     private PlayerInput _input;
     private Animator _animator;
     private PlayableGraph _graph;
@@ -15,7 +22,8 @@ public class AnimationSystem_v2 : MonoBehaviour
     private int _idlePort, _walkPort, _runPort;
 
     private AnimationMixerPlayable _combatMixer;
-    private Dictionary<string, int> _stanceNameToPort;
+    private Dictionary<string, int> _stanceNameToPort = new();
+    private readonly Dictionary<int, string> _stancePortToName = new();
     private int _currentStancePort = -1;
     private int _targetStancePort = -1;
     private float _blendTime;
@@ -53,6 +61,21 @@ public class AnimationSystem_v2 : MonoBehaviour
     [Header("Settings")] [SerializeField] private float _stanceBlendDuration = 0.02f;
     [Range(0f, 1f)] [SerializeField] private float _runThreshold = 0.6f;
 
+    
+    [Header("Debug")]
+    [SerializeField] private bool _debugAnimationWeights = true;
+    [SerializeField] private float _debugLogInterval = 0.5f;
+    [Tooltip("Optional transform to use as the root when logging armature scales. Defaults to the Animator transform.")]
+    [SerializeField] private Transform _debugScaleProbeRoot;
+
+    private float _nextDebugLogTime;
+    private string _lastDebugSignature;
+    private Transform _debugHips;
+    private Transform _debugLeftThigh;
+    private Transform _debugLeftFoot;
+    private Transform _debugSpine;
+
+    
     // Root motion control (off by default)
     public bool EnableRootMotion
     {
@@ -70,6 +93,7 @@ public class AnimationSystem_v2 : MonoBehaviour
         if (_animator == null) throw new MissingComponentException("Animator required");
 
         _animator.applyRootMotion = rootMotion;
+        CacheDebugScaleProbeBones();
         
         CreatePlayableGraph();
         // RegisterCombatClips(); //optional, incomplete
@@ -90,19 +114,19 @@ public class AnimationSystem_v2 : MonoBehaviour
         if (_targetStancePort != -1 && _blendTime < _stanceBlendDuration)
         {
             _blendTime += Time.deltaTime;
-            float t = Mathf.Clamp01(_blendTime / _stanceBlendDuration);
-
+            float t = _stanceBlendDuration > 0f ? Mathf.Clamp01(_blendTime / _stanceBlendDuration) : 1f;
             // When blending from no active stance
             if (_currentStancePort == -1)
             {
                 _combatMixer.SetInputWeight(_targetStancePort, t);
-                _layerMixer.SetInputWeight(1, t);
+                _layerMixer.SetInputWeight(CombatLayer, 1f);
+                
             }
             else
             {
                 _combatMixer.SetInputWeight(_currentStancePort, 1 - t);
                 _combatMixer.SetInputWeight(_targetStancePort, t);
-                _layerMixer.SetInputWeight(1, 1f);
+                _layerMixer.SetInputWeight(CombatLayer, 1f);
             }
 
             if (t >= 1f)
@@ -118,25 +142,33 @@ public class AnimationSystem_v2 : MonoBehaviour
                 _targetStancePort = -1;
             }
         }
+
+        LogAnimationDebugIfNeeded(speed);
     }
 
     private void UpdateLocomotionWeights(float speed)
     {
-        float walkWeight = 0f, runWeight = 0f;
+        float clampedSpeed = Mathf.Clamp01(speed);
+        float idleWeight = 0f;
+        float walkWeight = 0f;
+        float runWeight = 0f;
 
-        if (speed <= _runThreshold)
+        if (clampedSpeed <= _runThreshold)
         {
-            float t = _runThreshold > 0 ? speed / _runThreshold : 0f;
-            _locomotionMixer.SetInputWeight(_idlePort, 1 - t);
+            float t = _runThreshold > 0f ? clampedSpeed / _runThreshold : 0f;
+            idleWeight = 1 - t;
+            // _locomotionMixer.SetInputWeight(_idlePort, 1 - t);
             walkWeight = t;
         }
         else
         {
-            float t = (speed - _runThreshold) / (1f - _runThreshold);
+            // float t = (speed - _runThreshold) / (1f - _runThreshold);
+            float t = _runThreshold < 1f ? (clampedSpeed - _runThreshold) / (1f - _runThreshold) : 1f;
             walkWeight = 1 - t;
             runWeight = t;
         }
 
+        _locomotionMixer.SetInputWeight(_idlePort, idleWeight);
         _locomotionMixer.SetInputWeight(_walkPort, walkWeight);
         _locomotionMixer.SetInputWeight(_runPort, runWeight);
     }
@@ -147,25 +179,27 @@ public class AnimationSystem_v2 : MonoBehaviour
         return _input != null ? _input.moveAmount : 0f;
     }
 
-    public void SetFootIK( params AnimationClipPlayable[] clipPlayable)
+    public void SetFootIK(params AnimationClipPlayable[] clipPlayable)
     {
         for (int i = 0; i < clipPlayable.Length; i++)
         {
-            
-            clipPlayable[i].SetApplyFootIK(false);
+            if (clipPlayable[i].IsValid())
+            {
+                clipPlayable[i].SetApplyFootIK(footIk);
+                clipPlayable[i].SetApplyPlayableIK(handIk);
+            }
         }
-        
     }
 
 
     private void CreatePlayableGraph()
     {
         _graph = PlayableGraph.Create("AnimationSystem");
-        _graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime); //What is this?
+        _graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime); // Advances from Unity's game-time update loop.
 
         var output = AnimationPlayableOutput.Create(_graph, "Output", _animator);
 
-        // Layer mixer (mask): 2 layers (0 = locomotion, 1 = combat)
+        // Layer mixer: layer 0 = unmasked full-body locomotion, layer 1 = masked upper-body combat.
         _layerMixer = AnimationLayerMixerPlayable.Create(_graph, 2);
 
         // --- Layer 0: Locomotion (full body) ---------------------------------
@@ -174,32 +208,41 @@ public class AnimationSystem_v2 : MonoBehaviour
         _walkPort = 1;
         _runPort = 2;
 
-        _idlePlayable = AnimationClipPlayable.Create(_graph, _idleClip);
-        _walkPlayable = AnimationClipPlayable.Create(_graph, _walkClip);
-        _runPlayable = AnimationClipPlayable.Create(_graph, _runClip);
+        _idlePlayable = CreateClipPlayable(_idleClip, "Idle");
+        _walkPlayable = CreateClipPlayable(_walkClip, "Walk");
+        _runPlayable = CreateClipPlayable(_runClip, "Run");
+        SetFootIK(_idlePlayable, _walkPlayable, _runPlayable);
 
-
-        _graph.Connect(_idlePlayable, 0, _locomotionMixer, _idlePort);
-        _graph.Connect(_walkPlayable, 0, _locomotionMixer, _walkPort);
-        _graph.Connect(_runPlayable, 0, _locomotionMixer, _runPort);
+        ConnectClipPlayable(_idlePlayable, _locomotionMixer, _idlePort, "Idle");
+        ConnectClipPlayable(_walkPlayable, _locomotionMixer, _walkPort, "Walk");
+        ConnectClipPlayable(_runPlayable, _locomotionMixer, _runPort, "Run");
 
         _locomotionMixer.SetInputWeight(_idlePort, 1f);
         _locomotionMixer.SetInputWeight(_walkPort, 0f);
         _locomotionMixer.SetInputWeight(_runPort, 0f);
 
-        _layerMixer.ConnectInput(0, _locomotionMixer, 0, 1f);
-        _layerMixer.SetLayerMaskFromAvatarMask(0, _upperBodyMask);
+        _layerMixer.ConnectInput(LocomotionLayer, _locomotionMixer, 0, 1f);
+        _layerMixer.SetInputWeight(LocomotionLayer, 1f);
+        // Do not apply the upper-body mask to locomotion. The base layer must remain full-body,
+        // otherwise the legs have no source to play walk/run once the combat layer is masked.
 
         int stanceCount = 5;
         _combatMixer = AnimationMixerPlayable.Create(_graph, stanceCount);
         _stanceNameToPort = new();
+        _stancePortToName.Clear();
 
         void AttachStance(AnimationClip clip, string name, int port)
         {
-            if (clip == null) return;
-            var playable = AnimationClipPlayable.Create(_graph, clip);
-            _graph.Connect(playable, 0, _combatMixer, port);
+            if (clip == null)
+            {
+                Debug.LogWarning($"[AnimationSystem_v2] Stance clip '{name}' is not assigned; SetStance('{name}') will be ignored.", this);
+                return;
+            }
+
+            var playable = CreateClipPlayable(clip, name);
+            ConnectClipPlayable(playable, _combatMixer, port, name);
             _stanceNameToPort[name] = port;
+            _stancePortToName[port] = name;
             _combatMixer.SetInputWeight(port, 0f);
         }
 
@@ -209,20 +252,48 @@ public class AnimationSystem_v2 : MonoBehaviour
         AttachStance(_ochsClip, "ochs", 3);
         AttachStance(_ironGateClip, "ironGate", 4);
 
-        _layerMixer.ConnectInput(1, _combatMixer, 0, 1f);
+        _layerMixer.ConnectInput(CombatLayer, _combatMixer, 0, 1f);
         if (_upperBodyMask != null)
         {
-            _layerMixer.SetLayerMaskFromAvatarMask(1, _upperBodyMask);
+            _layerMixer.SetLayerMaskFromAvatarMask(CombatLayer, _upperBodyMask);
+        }
+        else
+        {
+            Debug.LogWarning("[AnimationSystem_v2] UpperBodyMask is not assigned. Combat stances will override the full body and can block locomotion legs.", this);
         }
 
-        _layerMixer.SetInputWeight(1, 0f);
+        _layerMixer.SetInputWeight(CombatLayer, 0f);
         _currentStancePort = -1;
         _targetStancePort = -1;
 
         output.SetSourcePlayable(_layerMixer);
         _graph.Play();
+
+        LogClipDiagnostics();
+        LogAnimationDebug("graph created", GetMovementSpeed(), force: true);
     }
 
+    private AnimationClipPlayable CreateClipPlayable(AnimationClip clip, string label)
+    {
+        if (clip == null)
+        {
+            Debug.LogError($"[AnimationSystem_v2] Required animation clip '{label}' is not assigned.", this);
+            return default(AnimationClipPlayable);
+        }
+
+        return AnimationClipPlayable.Create(_graph, clip);
+    }
+
+    private void ConnectClipPlayable(AnimationClipPlayable playable, AnimationMixerPlayable mixer, int port, string label)
+    {
+        if (!playable.IsValid())
+        {
+            Debug.LogError($"[AnimationSystem_v2] Cannot connect invalid playable for '{label}' on port {port}.", this);
+            return;
+        }
+
+        _graph.Connect(playable, 0, mixer, port);
+    }
 
     // ------------------- Public API ---------------------
 
@@ -231,7 +302,7 @@ public class AnimationSystem_v2 : MonoBehaviour
     {
         if (!_stanceNameToPort.TryGetValue(stanceName, out int targetPort))
         {
-            Debug.LogWarning($"Stance '{stanceName} not registered");
+            Debug.LogWarning($"Stance '{stanceName}' not registered", this);
             return;
         }
 
@@ -312,4 +383,136 @@ public class AnimationSystem_v2 : MonoBehaviour
         if (_graph.IsValid())
             _graph.Destroy();
     }
+
+    #region Debug
+
+    
+    private void LogAnimationDebugIfNeeded(float speed)
+    {
+        if (!_debugAnimationWeights || Time.time < _nextDebugLogTime) return;
+
+        string signature = $"{_layerMixer.GetInputWeight(LocomotionLayer):F2}|{_layerMixer.GetInputWeight(CombatLayer):F2}|" +
+                           $"{_locomotionMixer.GetInputWeight(_idlePort):F2}|{_locomotionMixer.GetInputWeight(_walkPort):F2}|{_locomotionMixer.GetInputWeight(_runPort):F2}|" +
+                           $"{_currentStancePort}|{_targetStancePort}|{speed:F2}|{ScaleSignature(_debugHips)}|{ScaleSignature(_debugLeftThigh)}|{ScaleSignature(_debugLeftFoot)}";
+
+        if (signature == _lastDebugSignature) return;
+
+        _lastDebugSignature = signature;
+        LogAnimationDebug("update", speed, force: false);
+    }
+    
+    private void LogAnimationDebug(string reason, float speed, bool force)
+    {
+        if (!_debugAnimationWeights && !force) return;
+
+        _nextDebugLogTime = Time.time + Mathf.Max(0.05f, _debugLogInterval);
+
+        var builder = new StringBuilder();
+        builder.Append($"[AnimationSystem_v2] {reason} | speed={speed:F3} rootMotion={_animator.applyRootMotion} avatar={_animator.avatar?.name ?? "<none>"} ");
+        builder.Append($"graphValid={_graph.IsValid()} graphPlaying={(_graph.IsValid() && _graph.IsPlaying())} ");
+        builder.Append($"layerWeights locomotion={_layerMixer.GetInputWeight(LocomotionLayer):F3} combat={_layerMixer.GetInputWeight(CombatLayer):F3} ");
+        builder.Append($"locomotionWeights idle={_locomotionMixer.GetInputWeight(_idlePort):F3} walk={_locomotionMixer.GetInputWeight(_walkPort):F3} run={_locomotionMixer.GetInputWeight(_runPort):F3} ");
+        builder.Append($"stance current={GetStanceLabel(_currentStancePort)} target={GetStanceLabel(_targetStancePort)} blend={_blendTime:F3}/{_stanceBlendDuration:F3} ");
+        builder.Append("combatWeights=");
+        AppendMixerWeights(builder, _combatMixer, _stancePortToName);
+        builder.Append(" scales=");
+        AppendScale(builder, "animator", _animator.transform);
+        AppendScale(builder, "hips", _debugHips);
+        AppendScale(builder, "spine", _debugSpine);
+        AppendScale(builder, "leftThigh", _debugLeftThigh);
+        AppendScale(builder, "leftFoot", _debugLeftFoot);
+
+        Debug.Log(builder.ToString(), this);
+    }
+    
+    private void AppendMixerWeights(StringBuilder builder, AnimationMixerPlayable mixer, Dictionary<int, string> labels)
+    {
+        builder.Append('[');
+        for (int i = 0; i < mixer.GetInputCount(); i++)
+        {
+            if (i > 0) builder.Append(", ");
+            labels.TryGetValue(i, out string label);
+            builder.Append(label ?? $"port{i}");
+            builder.Append('=');
+            builder.Append(mixer.GetInputWeight(i).ToString("F3"));
+        }
+        builder.Append(']');
+    }
+
+    private string GetStanceLabel(int port)
+    {
+        if (port == -1) return "<none>";
+        return _stancePortToName.TryGetValue(port, out string label) ? $"{label}({port})" : $"port{port}";
+    }
+
+    private void CacheDebugScaleProbeBones()
+    {
+        Transform root = _debugScaleProbeRoot != null ? _debugScaleProbeRoot : _animator.transform;
+        _debugHips = FindDescendantByNameContains(root, "pelvis") ?? FindDescendantByNameContains(root, "hip");
+        _debugLeftThigh = FindDescendantByNameContains(root, "thigh.l") ?? FindDescendantByNameContains(root, "thigh_l") ?? FindDescendantByNameContains(root, "leftthigh");
+        _debugLeftFoot = FindDescendantByNameContains(root, "foot.l") ?? FindDescendantByNameContains(root, "foot_l") ?? FindDescendantByNameContains(root, "leftfoot");
+        _debugSpine = FindDescendantByNameContains(root, "spine.003") ?? FindDescendantByNameContains(root, "chest") ?? FindDescendantByNameContains(root, "spine");
+    }
+    
+    private Transform FindDescendantByNameContains(Transform root, string fragment)
+    {
+        if (root == null || string.IsNullOrEmpty(fragment)) return null;
+
+        string lowerFragment = fragment.ToLowerInvariant();
+        foreach (Transform child in root.GetComponentsInChildren<Transform>())
+        {
+            if (child.name.ToLowerInvariant().Contains(lowerFragment)) return child;
+        }
+
+        return null;
+    }
+
+    private void AppendScale(StringBuilder builder, string label, Transform transform)
+    {
+        builder.Append(' ');
+        builder.Append(label);
+        builder.Append('=');
+        builder.Append(ScaleSignature(transform));
+    }
+    
+    private string ScaleSignature(Transform transform)
+    {
+        if (transform == null) return "<missing>";
+        Vector3 scale = transform.localScale;
+        return $"({scale.x:F3},{scale.y:F3},{scale.z:F3})";
+    }
+
+    private void LogClipDiagnostics()
+    {
+        if (!_debugAnimationWeights) return;
+
+        LogClipDiagnostics(_idleClip, "Idle");
+        LogClipDiagnostics(_walkClip, "Walk");
+        LogClipDiagnostics(_runClip, "Run");
+        LogClipDiagnostics(_vomTagClip, "vomTag");
+        LogClipDiagnostics(_pflugClip, "pflug");
+        LogClipDiagnostics(_alberClip, "alber");
+        LogClipDiagnostics(_ochsClip, "ochs");
+        LogClipDiagnostics(_ironGateClip, "ironGate");
+    }
+
+    private void LogClipDiagnostics(AnimationClip clip, string label)
+    {
+        if (clip == null) return;
+
+        string scaleCurveInfo = "runtime binding details unavailable";
+#if UNITY_EDITOR
+        int scaleCurveCount = 0;
+        foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
+        {
+            if (binding.propertyName.Contains("Scale")) scaleCurveCount++;
+        }
+
+        scaleCurveInfo = $"scaleCurveBindings={scaleCurveCount}";
+#endif
+        Debug.Log($"[AnimationSystem_v2] Clip '{label}' name='{clip.name}' length={clip.length:F3}s frameRate={clip.frameRate:F1} wrapMode={clip.wrapMode} {scaleCurveInfo}", this);
+    }
+
+
+    #endregion
 }

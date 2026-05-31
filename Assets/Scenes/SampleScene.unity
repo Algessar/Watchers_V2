@@ -1846,13 +1846,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 2
-  m_Radius: 0.5
+  m_Height: 1.8
+  m_Radius: 0.23
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 1, z: 0}
+  m_Center: {x: 0, y: 0.91, z: 0}
 --- !u!4 &1913763943
 Transform:
   m_ObjectHideFlags: 0
@@ -1896,6 +1896,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a03ac862a6a440198385765a5cf244b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StanceController
+  _debugStanceInput: 1
 --- !u!114 &1913763948
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1919,9 +1920,12 @@ MonoBehaviour:
   _alberClip: {fileID: -5986454702758642862, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
   _ochsClip: {fileID: -58502521603112244, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
   _ironGateClip: {fileID: 5608109676326280882, guid: 20d49156674521842a416aaa5ef6c0d7, type: 3}
-  _upperBodyMask: {fileID: 31900000, guid: 2af400641f5a828468a87324e6094c56, type: 2}
+  _upperBodyMask: {fileID: 31900000, guid: 34b87fb9c2c6ed4418d1066dcd333bc4, type: 2}
   _stanceBlendDuration: 0.09
-  _runThreshold: 0.6
+  _runThreshold: 0.27
+  _debugAnimationWeights: 1
+  _debugLogInterval: 0.5
+  _debugScaleProbeRoot: {fileID: 1913763943}
 --- !u!1 &1996843780
 GameObject:
   m_ObjectHideFlags: 0

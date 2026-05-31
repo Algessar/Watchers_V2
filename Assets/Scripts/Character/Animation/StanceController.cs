@@ -5,39 +5,62 @@ public class StanceController : MonoBehaviour
     private AnimationSystem_v2 _animSystem;
     private PlayerInput _input;
 
+    [SerializeField] private bool _debugStanceInput = true;
+
     private void Start()
     {
         _animSystem = GetComponent<AnimationSystem_v2>();
         _input = GetComponent<PlayerInput>();
+
+        if (_animSystem == null)
+        {
+            Debug.LogError("[StanceController] AnimationSystem_v2 component is missing; stance inputs cannot drive animations.", this);
+        }
+
+        if (_input == null)
+        {
+            Debug.LogError("[StanceController] PlayerInput component is missing; stance inputs cannot be read.", this);
+        }
     }
 
     private void Update()
     {
+        if (_animSystem == null || _input == null) return;
+
         if (_input.vomTagTrigger)
         {
             _input.vomTagTrigger = false;
-            _animSystem.SetStance("vomTag");
+            SetStance("vomTag");
         }
         if (_input.pflugTrigger)
         {
             _input.pflugTrigger = false;
-            _animSystem.SetStance("pflug");
+            SetStance("pflug");
         }
         if (_input.alberTrigger)
         {
             _input.alberTrigger = false;
-            _animSystem.SetStance("alber");
+            SetStance("alber");
         }
         if (_input.ochsTrigger)
         {
             _input.ochsTrigger = false;
-            _animSystem.SetStance("ochs");
+            SetStance("ochs");
         }
         if (_input.ironGateTrigger)
         {
             _input.ironGateTrigger = false;
-            _animSystem.SetStance("ironGate");
+            SetStance("ironGate");
         }
-        
+    }
+
+    private void SetStance(string stanceName)
+    {
+        if (_debugStanceInput)
+        {
+            Debug.Log($"[StanceController] Triggered stance '{stanceName}' with moveAmount={_input.moveAmount:F3}.", this);
+        }
+
+        _animSystem.SetStance(stanceName);
     }
 }
