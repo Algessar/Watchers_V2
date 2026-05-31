@@ -6,6 +6,7 @@ using UnityEngine.Playables;
 
 public class AnimationSystem_v2 : MonoBehaviour
 {
+    private PlayerInput _input;
     private Animator _animator;
     private PlayableGraph _graph;
     private AnimationLayerMixerPlayable _layerMixer;
@@ -34,6 +35,7 @@ public class AnimationSystem_v2 : MonoBehaviour
     private AnimationClipPlayable _walkPlayable;
     private AnimationClipPlayable _runPlayable;
 
+    public bool rootMotion;
     public bool footIk = false;
     public bool handIk = false;
 
@@ -60,20 +62,25 @@ public class AnimationSystem_v2 : MonoBehaviour
 
     private void Start()
     {
+        _input = GetComponent<PlayerInput>();
+
         _animator = GetComponentInChildren<Animator>();
+        
+        
         if (_animator == null) throw new MissingComponentException("Animator required");
 
-        _animator.applyRootMotion = false;
+        _animator.applyRootMotion = rootMotion;
         
         CreatePlayableGraph();
-        RegisterCombatClips(); //optional, incomplete
+        // RegisterCombatClips(); //optional, incomplete
     }
 
     private void Update()
     {
-        _idlePlayable.SetApplyFootIK(footIk);
-        _walkPlayable.SetApplyFootIK(footIk);
-        _runPlayable.SetApplyFootIK(footIk);
+        SetFootIK(_idlePlayable, _walkPlayable, _runPlayable);
+        
+        _animator.applyRootMotion = rootMotion;
+
         
         // 1. Update locomotion weights based on movement speed
         float speed = GetMovementSpeed();
@@ -137,13 +144,17 @@ public class AnimationSystem_v2 : MonoBehaviour
     private float GetMovementSpeed()
     {
         //TODO: change to GetComponent in Start
-        PlayerInput input = GetComponent<PlayerInput>();
-        return input != null ? input.moveAmount : 0f;
+        return _input != null ? _input.moveAmount : 0f;
     }
 
-    public void SetFootIK( int index, params AnimationClipPlayable[] clipPlayable)
+    public void SetFootIK( params AnimationClipPlayable[] clipPlayable)
     {
-        clipPlayable[index].SetApplyFootIK(false);
+        for (int i = 0; i < clipPlayable.Length; i++)
+        {
+            
+            clipPlayable[i].SetApplyFootIK(false);
+        }
+        
     }
 
 

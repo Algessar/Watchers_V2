@@ -33,6 +33,7 @@ public class Movement : MonoBehaviour
     
     public Vector3 moveDirection;
     public float moveSpeed = 0.5f;
+    private float _baseRotationSpeed;
 
     private void Start()
     {
@@ -64,39 +65,7 @@ public class Movement : MonoBehaviour
         moveDirection = CalculateCamRelativeDir();
 
         Controller(moveDirection * (moveSpeed * Time.deltaTime));
-
-        // float speed = _input.moveAmount; // 0...1
-        //
-        // // Compute continuous weights
-        // float idleWeight = 0f;
-        // float walkWeight = 0f;
-        // float runWeight  = 0f;
-        //
-        // if (speed < walkStartSpeed)
-        // {
-        //     // Only idle, full weight = 1, others 0
-        //     idleWeight = 1f;
-        // }
-        // else if (speed < runStartSpeed)
-        // {
-        //     // Blend between idle and walk
-        //     float t = Mathf.InverseLerp(walkStartSpeed, runStartSpeed, speed);
-        //     // But we want idle to fade out and walk to fade in
-        //     idleWeight = 1f - t;
-        //     walkWeight = t;
-        // }
-        // else
-        // {
-        //     // Blend between walk and run
-        //     float t = Mathf.InverseLerp(runStartSpeed, 1f, speed);
-        //     walkWeight = 1f - t;
-        //     runWeight  = t;
-        // }
-        //
-        // // Apply weights directly (no timer, no crossfade)
-        // _animSystemV1.SetClipWeight(_idleId, idleWeight);
-        // _animSystemV1.SetClipWeight(_walkId, walkWeight);
-        // _animSystemV1.SetClipWeight(_runId,  runWeight);
+        RotatePlayer(moveDirection);
     }
 
 
@@ -128,6 +97,19 @@ public class Movement : MonoBehaviour
         moveDir.Normalize();
         moveDir.y = 0;
         return moveDir;
+    }
+    
+    public Vector3 RotatePlayer(Vector3 targetDirection)
+    {
+        if (_targetDirection.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(_targetDirection, Vector3.up);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, targetRotation, 
+                _baseRotationSpeed * Time.deltaTime);
+        }
+
+        return _targetDirection;
     }
 
 }
