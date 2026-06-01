@@ -163,6 +163,15 @@ public partial class @Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SetTarget"",
+                    ""type"": ""Button"",
+                    ""id"": ""8c119b65-4845-44ec-8c71-ea38f382d3ca"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -253,6 +262,17 @@ public partial class @Actions: IInputActionCollection2, IDisposable
                     ""action"": ""LeaveGuard"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""78a7eaa8-41dd-461a-ac4c-f4643e020043"",
+                    ""path"": ""<Gamepad>/leftTrigger"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SetTarget"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -269,6 +289,7 @@ public partial class @Actions: IInputActionCollection2, IDisposable
         m_Player_Ochs = m_Player.FindAction("Ochs", throwIfNotFound: true);
         m_Player_IronGate = m_Player.FindAction("IronGate", throwIfNotFound: true);
         m_Player_LeaveGuard = m_Player.FindAction("LeaveGuard", throwIfNotFound: true);
+        m_Player_SetTarget = m_Player.FindAction("SetTarget", throwIfNotFound: true);
     }
 
     ~@Actions()
@@ -357,6 +378,7 @@ public partial class @Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Ochs;
     private readonly InputAction m_Player_IronGate;
     private readonly InputAction m_Player_LeaveGuard;
+    private readonly InputAction m_Player_SetTarget;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -400,6 +422,10 @@ public partial class @Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/LeaveGuard".
         /// </summary>
         public InputAction @LeaveGuard => m_Wrapper.m_Player_LeaveGuard;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SetTarget".
+        /// </summary>
+        public InputAction @SetTarget => m_Wrapper.m_Player_SetTarget;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -450,6 +476,9 @@ public partial class @Actions: IInputActionCollection2, IDisposable
             @LeaveGuard.started += instance.OnLeaveGuard;
             @LeaveGuard.performed += instance.OnLeaveGuard;
             @LeaveGuard.canceled += instance.OnLeaveGuard;
+            @SetTarget.started += instance.OnSetTarget;
+            @SetTarget.performed += instance.OnSetTarget;
+            @SetTarget.canceled += instance.OnSetTarget;
         }
 
         /// <summary>
@@ -485,6 +514,9 @@ public partial class @Actions: IInputActionCollection2, IDisposable
             @LeaveGuard.started -= instance.OnLeaveGuard;
             @LeaveGuard.performed -= instance.OnLeaveGuard;
             @LeaveGuard.canceled -= instance.OnLeaveGuard;
+            @SetTarget.started -= instance.OnSetTarget;
+            @SetTarget.performed -= instance.OnSetTarget;
+            @SetTarget.canceled -= instance.OnSetTarget;
         }
 
         /// <summary>
@@ -581,5 +613,12 @@ public partial class @Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnLeaveGuard(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SetTarget" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSetTarget(InputAction.CallbackContext context);
     }
 }

@@ -5,6 +5,8 @@ using UnityEngine.Playables;
 
 public class Combat : MonoBehaviour
 {
+    private PlayerInput _input;
+    
     private const float NoTargetDistance = -1f;
     private const int MaxTargetResults = 32;
 
@@ -33,6 +35,7 @@ public class Combat : MonoBehaviour
     private void Start()
     {
         // WeaponMaster.SetParent(Chest, false);
+        _input = GetComponent<PlayerInput>();
     }
 
     private void Update()
