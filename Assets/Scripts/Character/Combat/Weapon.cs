@@ -13,11 +13,18 @@ public class Weapon : MonoBehaviour
     // [SerializeField] private Collider _edgeHiltCollider;
 
     [SerializeField] private float _damage = 5;
+    [SerializeField] private float _velocityDamageMultiplier = 1f;
+    
     private float _totalDamage;
     private float _tipVelocity;
+    private Vector3 _previousTipPosition;
 
     private bool _attackStarted;
     private bool _hitRegistered;
+    
+    [SerializeField] private bool _disableTipColliderOutsideDamageWindow = true;
+    private bool _damageWindowActive;
+    public bool IsDamageWindowActive => _damageWindowActive;
 
     private readonly HashSet<IDamageable> _damagedTargets = new();
 
@@ -28,11 +35,36 @@ public class Weapon : MonoBehaviour
             _ownerRoot = transform.root; //NOTE: No idea what this is for really
         }
     }
+    private void Update()
+    {
+        UpdateTipVelocity(Time.deltaTime);   
+    }
 
     private void OnEnable()
     {
+        ResetTipTracking();
         ResetHitRegistration();
     }
+    
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!_damageWindowActive) return;
+        
+        ApplyDamage(other);
+    }
+
+    private void ResetTipTracking()
+    {
+        _previousTipPosition = GetTipPosition();
+        _tipVelocity = 0f;
+    }
+
+    private Vector3 GetTipPosition()
+    {
+        
+        return _swordTip != null ? _swordTip.position : transform.position;
+    }
+
 
     private void ResetHitRegistration()
     {
@@ -42,16 +74,15 @@ public class Weapon : MonoBehaviour
 
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-       // _hitRegistered = true;
-       ApplyDamage(other);
-    }
+    
 
     public void BeginDamageWindow()
     {
+        _damageWindowActive = true;
         _attackStarted = true;
+        ResetTipTracking();
         ResetHitRegistration();
+        SetTipColliderEnabled(true);
 
         if (_tipCollider != null)
         {
@@ -59,63 +90,52 @@ public class Weapon : MonoBehaviour
         }
     }
 
+    private void SetTipColliderEnabled(bool b)
+    {
+        if (_tipCollider != null && _disableTipColliderOutsideDamageWindow)
+        {
+            _tipCollider.enabled = enabled;
+        }
+    }
+
     public void EndDamageWindow()
     {
         _attackStarted = false;
+        ResetHitRegistration();
+        ResetTipTracking();
+        
         if (_tipCollider != null)
         {
             _tipCollider.enabled = false;
         }
     }
-    
-    
 
-    //NOTE: pseudo-code.
-    float CalculateVelocity()
+    void UpdateTipVelocity(float deltaTime)
     {
-        // Current tip location -> final tip location on hit.
-        
-        //TEMP
-        float velocity = 0;
-        
-        float time = 0;
-        Vector3 startPos = _swordTip != null ? _swordTip.transform.position : transform.position;
-        Vector3 finalPos = Vector3.zero;
-        // is this checking time it takes from current to final?
+        Vector3 currentTipPos = GetTipPosition();
 
-
-        if (_attackStarted)
+        if (deltaTime > Mathf.Epsilon)
         {
-            time = Time.deltaTime;
-
+            float tipDistace = Vector3.Distance(_previousTipPosition, currentTipPos);
+            _tipVelocity = tipDistace / deltaTime;
         }
-        //This could probably be an OnTrigger event 
-        
-
-        if (_hitRegistered)
+        else
         {
-            
-            finalPos = _swordTip != null ? _swordTip.transform.position : transform.position;
-            float d = Vector3.Distance(startPos, finalPos);
-
-            if (d > Mathf.Epsilon)
-            {
-                velocity += d / time;
-            }
+            _tipVelocity = 0f;
         }
 
+        _previousTipPosition = currentTipPos;
 
-        _hitRegistered = false;
-        time = 0;
-
-        return velocity;
     }
+
+
 
     float CalculateDamage()
     {
         // Additive damage from base damage, hit area and velocity (tip travel distance).
 
-        return _totalDamage = _damage + CalculateVelocity();
+        float velocityDamage = _tipVelocity * _velocityDamageMultiplier;
+        return _totalDamage = _damage + velocityDamage;  //_damage + CalculateVelocity();
     }
 
     void ApplyDamage(Collider hitCollider)
@@ -137,5 +157,10 @@ public class Weapon : MonoBehaviour
     private bool IsOwnedCollider(Collider hitCollider)
     {
         return _ownerRoot != null && hitCollider.transform.IsChildOf(_ownerRoot);
+    }
+
+    private void OnDisable()
+    {
+        EndDamageWindow();
     }
 }
