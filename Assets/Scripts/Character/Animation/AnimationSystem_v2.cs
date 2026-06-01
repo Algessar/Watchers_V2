@@ -25,6 +25,8 @@ public class AnimationSystem_v2 : MonoBehaviour
     private Dictionary<string, int> _stanceNameToPort;
     private readonly Dictionary<int, string> _stancePortToName = new();
     private int _currentStancePort = -1;
+    public int CurrentStancePort => _currentStancePort;
+    
     private int _targetStancePort = -1;
     private float _blendTime;
 
@@ -376,6 +378,7 @@ public class AnimationSystem_v2 : MonoBehaviour
         }
 
         LogAnimationDebug("HideStance", GetMovementSpeed(), force: true);
+        Debug.Log($"HideStance, current: {_currentStancePort}, target: {_targetStancePort} ", this);
     }
 
     /// <summary> Register a clip dynamically (optional). </summary>

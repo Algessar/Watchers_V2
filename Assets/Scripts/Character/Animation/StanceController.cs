@@ -25,6 +25,8 @@ public class StanceController : MonoBehaviour
 
     private void Update()
     {
+
+        
         if (_animSystem == null || _input == null) return;
 
         if (_input.vomTagTrigger)
@@ -51,6 +53,12 @@ public class StanceController : MonoBehaviour
         {
             _input.ironGateTrigger = false;
             SetStance("ironGate");
+        }
+
+        if (_input.leaveGuardTrigger)
+        {
+            _input.leaveGuardTrigger = false;
+            _animSystem.HideStance();
         }
     }
 

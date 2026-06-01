@@ -10,6 +10,7 @@ using UnityEngine.Playables;
 public class Movement : MonoBehaviour
 {
     private CharacterController _controller;
+    private AnimationSystem_v2 _animSystem;
     private Camera _camera;
 
     //Input
@@ -24,7 +25,9 @@ public class Movement : MonoBehaviour
     [SerializeField] private float runStartSpeed = 0.7f;
 
     public Vector3 moveDirection;
-    public float moveSpeed = 0.5f;
+    [SerializeField] private float _moveSpeed = 5f;
+    [SerializeField] private float _currentSpeed = 0.5f;
+    [SerializeField] private float _halfSpeed = 0f;
 
     [Header("Steering")] [SerializeField] private float _rotationSpeed = 720f;
 
@@ -39,6 +42,7 @@ public class Movement : MonoBehaviour
         // _gamepad = Gamepad.current;
         _controller = GetComponent<CharacterController>();
         _input = GetComponent<PlayerInput>();
+        _animSystem = GetComponent<AnimationSystem_v2>();
 
         _camera = Camera.main;
 
@@ -47,14 +51,24 @@ public class Movement : MonoBehaviour
             Debug.Log("Gamepad is null");
         }
 
+        _halfSpeed = _moveSpeed / 2;
 
     }
 
     public void Update()
     {
+        if (_animSystem.CurrentStancePort != -1)
+        {
+            _currentSpeed = _halfSpeed;
+        }
+        else
+        {
+            _currentSpeed = _moveSpeed;
+        }
+        
         moveDirection = CalculateCameraRelativeMoveDirection();
 
-        Controller(moveDirection * (moveSpeed * Time.deltaTime));
+        Controller(moveDirection * (_currentSpeed * Time.deltaTime));
         RotatePlayer(GetFacingDirection(moveDirection));
     }
 

@@ -154,6 +154,15 @@ public partial class @Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""LeaveGuard"",
+                    ""type"": ""Button"",
+                    ""id"": ""fc9e3a18-a220-438e-8c41-4cc41df1344f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -233,6 +242,17 @@ public partial class @Actions: IInputActionCollection2, IDisposable
                     ""action"": ""IronGate"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f72415f8-adec-42d8-bdb5-74a9714dc286"",
+                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LeaveGuard"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -248,6 +268,7 @@ public partial class @Actions: IInputActionCollection2, IDisposable
         m_Player_Alber = m_Player.FindAction("Alber", throwIfNotFound: true);
         m_Player_Ochs = m_Player.FindAction("Ochs", throwIfNotFound: true);
         m_Player_IronGate = m_Player.FindAction("IronGate", throwIfNotFound: true);
+        m_Player_LeaveGuard = m_Player.FindAction("LeaveGuard", throwIfNotFound: true);
     }
 
     ~@Actions()
@@ -335,6 +356,7 @@ public partial class @Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Alber;
     private readonly InputAction m_Player_Ochs;
     private readonly InputAction m_Player_IronGate;
+    private readonly InputAction m_Player_LeaveGuard;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -374,6 +396,10 @@ public partial class @Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/IronGate".
         /// </summary>
         public InputAction @IronGate => m_Wrapper.m_Player_IronGate;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/LeaveGuard".
+        /// </summary>
+        public InputAction @LeaveGuard => m_Wrapper.m_Player_LeaveGuard;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -421,6 +447,9 @@ public partial class @Actions: IInputActionCollection2, IDisposable
             @IronGate.started += instance.OnIronGate;
             @IronGate.performed += instance.OnIronGate;
             @IronGate.canceled += instance.OnIronGate;
+            @LeaveGuard.started += instance.OnLeaveGuard;
+            @LeaveGuard.performed += instance.OnLeaveGuard;
+            @LeaveGuard.canceled += instance.OnLeaveGuard;
         }
 
         /// <summary>
@@ -453,6 +482,9 @@ public partial class @Actions: IInputActionCollection2, IDisposable
             @IronGate.started -= instance.OnIronGate;
             @IronGate.performed -= instance.OnIronGate;
             @IronGate.canceled -= instance.OnIronGate;
+            @LeaveGuard.started -= instance.OnLeaveGuard;
+            @LeaveGuard.performed -= instance.OnLeaveGuard;
+            @LeaveGuard.canceled -= instance.OnLeaveGuard;
         }
 
         /// <summary>
@@ -542,5 +574,12 @@ public partial class @Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnIronGate(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "LeaveGuard" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLeaveGuard(InputAction.CallbackContext context);
     }
 }

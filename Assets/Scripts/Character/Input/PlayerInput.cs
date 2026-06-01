@@ -24,6 +24,8 @@ public class PlayerInput : MonoBehaviour
     public bool langortTrigger; // should be contextual / triggered during in-combat transition
     public bool ironGateTrigger;
 
+    public bool leaveGuardTrigger;
+    
     private void Update()
     {
     }
@@ -50,6 +52,8 @@ public class PlayerInput : MonoBehaviour
         _actions.Player.Ochs.started     += OnOchs;
         
         _actions.Player.IronGate.started += OnIronGate;
+
+        _actions.Player.LeaveGuard.started += OnLeaveGuard;
 
     }
 
@@ -103,6 +107,11 @@ public class PlayerInput : MonoBehaviour
             ironGateTrigger = true;
     }
 
+    void OnLeaveGuard(InputAction.CallbackContext ctx)
+    {
+        leaveGuardTrigger = true;
+    }
+
 
     private void OnDisable()
     {
@@ -121,6 +130,8 @@ public class PlayerInput : MonoBehaviour
         _actions.Player.Ochs.started     -= OnOchs;
         
         _actions.Player.IronGate.started -= OnIronGate;
+
+        _actions.Player.LeaveGuard.started -= OnLeaveGuard;
 
         _actions.Disable();
     }
