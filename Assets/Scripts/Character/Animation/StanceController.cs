@@ -1,9 +1,18 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class StanceController : MonoBehaviour
 {
     private AnimationSystem_v2 _animSystem;
     private PlayerInput _input;
+
+    public Action OnVomTag;
+    public Action OnPflug;
+    public Action OnAlber;
+    public Action OnOchs;
+    public Action OnIronGate;
+
+    public Action OnLeaveGuard;
 
     [SerializeField] private bool _debugStanceInput = true;
 
@@ -20,7 +29,10 @@ public class StanceController : MonoBehaviour
         if (_input == null)
         {
             Debug.LogError("[StanceController] PlayerInput component is missing; stance inputs cannot be read.", this);
+            
         }
+
+        
     }
 
     private void Update()
@@ -32,32 +44,38 @@ public class StanceController : MonoBehaviour
         if (_input.vomTagTrigger)
         {
             _input.vomTagTrigger = false;
+            OnVomTag?.Invoke();
             SetStance("vomTag");
         }
         if (_input.pflugTrigger)
         {
             _input.pflugTrigger = false;
+            OnPflug?.Invoke();
             SetStance("pflug");
         }
         if (_input.alberTrigger)
         {
             _input.alberTrigger = false;
+            OnAlber?.Invoke();
             SetStance("alber");
         }
         if (_input.ochsTrigger)
         {
             _input.ochsTrigger = false;
+            OnOchs?.Invoke();
             SetStance("ochs");
         }
         if (_input.ironGateTrigger)
         {
             _input.ironGateTrigger = false;
+            OnIronGate?.Invoke();
             SetStance("ironGate");
         }
 
         if (_input.leaveGuardTrigger)
         {
             _input.leaveGuardTrigger = false;
+            OnLeaveGuard?.Invoke();
             _animSystem.HideStance();
         }
     }

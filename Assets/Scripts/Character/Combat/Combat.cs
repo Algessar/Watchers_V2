@@ -14,12 +14,6 @@ public class Combat : MonoBehaviour
 
     private void Start()
     {
-        WeaponMaster.SetParent(Chest, false);
+        // WeaponMaster.SetParent(Chest, false);
     }
-}
-
-
-public interface IDamageable
-{
-    void TakeDamage(float damage);
 }
