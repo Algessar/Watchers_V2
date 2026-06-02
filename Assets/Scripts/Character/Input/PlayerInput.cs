@@ -25,10 +25,8 @@ public class PlayerInput : MonoBehaviour
     public bool ironGateTrigger;
 
     public bool leaveGuardTrigger;
+    public bool targetLockTrigger;
     
-    private void Update()
-    {
-    }
 
     private void OnEnable()
     {
@@ -55,7 +53,11 @@ public class PlayerInput : MonoBehaviour
 
         _actions.Player.LeaveGuard.started += OnLeaveGuard;
 
+        _actions.Player.TargetLock.started += OnTargetLock;
+
     }
+
+
 
     public void OnMove(InputAction.CallbackContext ctx)
     {
@@ -111,6 +113,22 @@ public class PlayerInput : MonoBehaviour
     {
         leaveGuardTrigger = true;
     }
+    
+    private void OnTargetLock(InputAction.CallbackContext obj)
+    {
+        targetLockTrigger = true;
+    }
+
+    public bool ConsumeTargetLockTrigger()
+    {
+        if (!targetLockTrigger)
+        {
+            return false;
+        }
+
+        targetLockTrigger = false;
+        return true;
+    }
 
 
     private void OnDisable()
@@ -132,6 +150,8 @@ public class PlayerInput : MonoBehaviour
         _actions.Player.IronGate.started -= OnIronGate;
 
         _actions.Player.LeaveGuard.started -= OnLeaveGuard;
+        
+        _actions.Player.TargetLock.started -= OnTargetLock;
 
         _actions.Disable();
     }

@@ -3,6 +3,14 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
+
+public enum CombatTargetLockMode
+{
+    None,
+    Soft,
+    Hard
+}
+
 public class Combat : MonoBehaviour
 {
     private PlayerInput _input;
@@ -19,57 +27,161 @@ public class Combat : MonoBehaviour
     [SerializeField] private LayerMask _targetLayers = ~0;
     [SerializeField] private float _targetRefreshInterval = 0.25f;
     
-    [Header("Weapon IK")]
-    public Transform WeaponMaster;
-    public Transform Chest;
-
 
     private readonly Collider[] _targetResults = new Collider[MaxTargetResults];
     private CombatTarget _currentCombatTarget;
     private float _targetRefreshTimer;
     private float _currentTargetDistance = NoTargetDistance;
-
     public CombatTarget CurrentCombatTarget => _currentCombatTarget;
-    
 
+    [Header("Locking")]
+    
+    private CombatTargetLockMode _targetLockMode = CombatTargetLockMode.None;
+    
+    [SerializeField] private bool _softLockByDefault = true;
+
+    [SerializeField] private float _softLockBreakDistance = 8f;
+    [SerializeField] private float _softLockEscapeDistance = 2.5f;
+    [SerializeField, Range (0f, 1f)] private float _softLockEscapeInputThreshold = 0.65f;
+    [SerializeField] private float _softLockReacquireDelay = 0.75f;
+    [SerializeField] private float _lockedRotationResponsiveness = 8f;
+    [SerializeField, Range(0f, 0.85f)] private float _lockRotationStrength = 0.55f; 
+    
+    private float _softLockCooldownTimer;
+    
+    // Public getters
+    public CombatTargetLockMode TargetLockMode => _targetLockMode;
+    public float LockRotationStrength => _lockRotationStrength;
+    public bool HasCurrentTarget => CurrentTarget != null;
+    public bool IsLockedOn => HasCurrentTarget && _targetLockMode != CombatTargetLockMode.None;
+    
+    
+        
+    [Header("Weapon IK")]
+    public Transform WeaponMaster;
+    public Transform Chest;
+    
+    
     private void Start()
     {
-        // WeaponMaster.SetParent(Chest, false);
         _input = GetComponent<PlayerInput>();
     }
 
     private void Update()
     {
         _targetRefreshTimer -= Time.deltaTime;
+        _softLockCooldownTimer -= Time.deltaTime;
+        
+        if (_input != null && _input.ConsumeTargetLockTrigger())
+        {
+            ToggleHardLock();
+        }
+        
+        
         bool hasAssignedTarget = CurrentTarget != null;
         bool hasInvalidTarget = hasAssignedTarget && !ValidateCurrentTarget();
+        
+        UpdateTargetDistance();
 
-        if (hasInvalidTarget || _targetRefreshTimer <= 0f)
+        if (hasInvalidTarget)
         {
-            AcquireNearestTarget();
+            ClearCurrentTarget();
+        }
+        else if (_targetLockMode == CombatTargetLockMode.Soft && ShouldBreakSoftLock())
+        {
+            ClearCurrentTarget();
+            _softLockCooldownTimer = _softLockReacquireDelay;
+        }
+        else if (_targetLockMode != CombatTargetLockMode.Hard && _targetRefreshTimer <= 0f)
+        {
+            AcquireSoftLockTarget();
             _targetRefreshTimer = _targetRefreshInterval;
         }
 
         UpdateTargetDistance();
+
+
     }
 
+    private void LateUpdate()
+    {
+        RotateTowardLockedTarget();
+    }
 
+    private void RotateTowardLockedTarget()
+    {
+        if (!IsLockedOn || _lockRotationStrength <= 0)
+        {
+            return;
+        }
 
-    private bool AcquireNearestTarget()
+        Vector3 directionToTarget = Vector3.ProjectOnPlane(CurrentTarget.position - transform.position, Vector3.up);
+        if (directionToTarget.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(directionToTarget.normalized, Vector3.up);
+        float effectiveStrength = Mathf.Clamp(_lockRotationStrength, 0f, 0.95f);
+        float rotationBlend = 1f - Mathf.Exp(-_lockedRotationResponsiveness * effectiveStrength * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Mathf.Min(rotationBlend, 0.95f));
+    }
+
+    private bool AcquireSoftLockTarget()
+    {
+
+        if (_softLockByDefault || _softLockCooldownTimer > 0f)
+        {
+            if (_targetLockMode == CombatTargetLockMode.Soft)
+            {
+                ClearCurrentTarget();
+            }
+
+            return false;
+        }
+
+        CombatTarget nearestTarget = FindNearestTarget();
+        SetCurrentTarget(nearestTarget, nearestTarget != null ? CombatTargetLockMode.Soft : CombatTargetLockMode.None);
+        return nearestTarget != null;
+    }
+
+    private bool ToggleHardLock()
+    {
+        if (_targetLockMode == CombatTargetLockMode.Hard)
+        {
+            ClearCurrentTarget();
+            return false;
+        }
+        
+        CombatTarget target = _currentCombatTarget != null && _currentCombatTarget.IsValid
+            ? _currentCombatTarget
+            : FindNearestTarget();
+
+        if (target == null)
+        {
+            ClearCurrentTarget();
+            return false;
+        }
+
+        SetCurrentTarget(target, CombatTargetLockMode.Hard);
+        return true;
+        
+    }
+
+    private void UpdateTargetDistance()
+    {
+        _currentTargetDistance = CurrentTarget != null
+            ? Vector3.Distance(transform.position, CurrentTarget.position)
+            : NoTargetDistance;
+    }
+    
+    public bool AcquireNearestTarget()
     {
         CombatTarget nearestTarget = FindNearestTarget();
-        SetCurrentTarget(nearestTarget);
-        return nearestTarget != null;
+        SetCurrentTarget(nearestTarget, nearestTarget != null ? CombatTargetLockMode.Soft : CombatTargetLockMode.None);        return nearestTarget != null;
 
     }
-
-    private void SetCurrentTarget(CombatTarget target)
-    {
-        _currentCombatTarget = target;
-        CurrentTarget = target != null ? target.TargetPoint : null;
-        UpdateTargetDistance();
-    }
-
+    
     private CombatTarget FindNearestTarget()
     {
         int hitCount = Physics.OverlapSphereNonAlloc(
@@ -85,13 +197,13 @@ public class Combat : MonoBehaviour
         for (int i = 0; i < hitCount; i++)
         {
             Collider hit = _targetResults[i];
-            if (hit == null || hit.transform == transform || hit.transform.IsChildOf(transform))
+            if (!hit || hit.transform == transform || hit.transform.IsChildOf(transform))
             {
                 continue;
             }
 
             CombatTarget candidate = hit.GetComponentInParent<CombatTarget>();
-            if (candidate == null || !candidate.IsValid)
+            if (!candidate || !candidate.IsValid)
             {
                 continue;
             }
@@ -105,18 +217,6 @@ public class Combat : MonoBehaviour
 
         return nearestTarget;
 
-    }
-    
-    public void ClearCurrentTarget()
-    {
-        SetCurrentTarget(null);
-    }
-
-    private void UpdateTargetDistance()
-    {
-        _currentTargetDistance = CurrentTarget != null
-            ? Vector3.Distance(transform.position, CurrentTarget.position)
-            : NoTargetDistance;
     }
     
     private bool ValidateCurrentTarget()
@@ -140,4 +240,36 @@ public class Combat : MonoBehaviour
 
         return true;    
     }
+    
+    private void SetCurrentTarget(CombatTarget target, CombatTargetLockMode lockMode)
+    {
+        _currentCombatTarget = target;
+        CurrentTarget = target != null ? target.TargetPoint : null;
+        _targetLockMode = target != null ? lockMode : CombatTargetLockMode.None;
+        UpdateTargetDistance();
+    }
+    
+    public void ClearCurrentTarget()
+    {
+        SetCurrentTarget(null, CombatTargetLockMode.None);
+    }
+    
+    private bool ShouldBreakSoftLock()
+    {
+        if (CurrentTarget == null) return false;
+
+        if (_currentTargetDistance > _softLockBreakDistance)
+        {
+            return true;
+        }
+
+        if (_input == null || _input.direction.sqrMagnitude <= 0.01f ||
+            _currentTargetDistance < _softLockEscapeDistance)
+        {
+            return false;
+        }
+
+        return _input.direction.y <= -_softLockEscapeInputThreshold;
+    }
+    
 }

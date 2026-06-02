@@ -79,7 +79,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "SetTarget",
+                    "name": "TargetLock",
                     "type": "Button",
                     "id": "8c119b65-4845-44ec-8c71-ea38f382d3ca",
                     "expectedControlType": "",
@@ -184,7 +184,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "SetTarget",
+                    "action": "TargetLock",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

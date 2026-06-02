@@ -273,7 +273,7 @@ public class AnimationSystem_v2 : MonoBehaviour
         _graph.Play();
 
         LogClipDiagnostics();
-        LogAnimationDebug("graph created", GetMovementSpeed(), force: true);
+        LogAnimationDebug("graph created", GetMovementSpeed(), force: false);
     }
 
     private AnimationClipPlayable CreateClipPlayable(AnimationClip clip, string label)
@@ -434,7 +434,7 @@ private AnimationClip GetPlayableClip(AnimationClip clip, string label)
 
         _targetStancePort = targetPort;
         _blendTime = 0f;
-        LogAnimationDebug($"SetStance('{stanceName}')", GetMovementSpeed(), force: true);
+        LogAnimationDebug($"SetStance('{stanceName}')", GetMovementSpeed(), force: false);
     }
 
     public void HideStance()
@@ -460,7 +460,7 @@ private AnimationClip GetPlayableClip(AnimationClip clip, string label)
             _blendTime = 0f;
         }
 
-        LogAnimationDebug("HideStance", GetMovementSpeed(), force: true);
+        LogAnimationDebug("HideStance", GetMovementSpeed(), force: false);
         Debug.Log($"HideStance, current: {_currentStancePort}, target: {_targetStancePort} ", this);
     }
 
@@ -506,7 +506,7 @@ private AnimationClip GetPlayableClip(AnimationClip clip, string label)
         LogAnimationDebug("update", speed, force: false);
     }
 
-    private void LogAnimationDebug(string reason, float speed, bool force)
+    private void LogAnimationDebug(string reason, float speed, bool force = false)
     {
         if (!_debugAnimationWeights && !force) return;
 
