@@ -66,10 +66,6 @@ public class AnimationSystem_v2 : MonoBehaviour
     [Range(0f, 1f)] [SerializeField] private float _runThreshold = 0.6f;
 
     [Header("Clip Sanitization")]
-#if UNITY_EDITOR
-    private const string CleanedClipFolderPath = "Assets/Character/Animations/CleanedClips";
-    private const string CleanedClipSignaturePrefix = "AnimationSystem_v2_SourceSignature=";
-#endif
     [Tooltip("When running in the Unity Editor, cache cleaned copies under Assets/Character/Animations/CleanedClips and remove scale curves before clips enter the playable graph.")]    [SerializeField] private bool _stripScaleCurvesFromPlayableClips = true;
     [SerializeField] private int _maxScaleCurveSamplesToLog = 8;
 
@@ -85,7 +81,7 @@ public class AnimationSystem_v2 : MonoBehaviour
     private Transform _debugLeftThigh;
     private Transform _debugLeftFoot;
     private Transform _debugSpine;
-    // private readonly List<AnimationClip> _runtimeClipCopies = new();
+
 
     // Root motion control (off by default)
     public bool EnableRootMotion
@@ -287,109 +283,16 @@ public class AnimationSystem_v2 : MonoBehaviour
         return AnimationClipPlayable.Create(_graph, GetPlayableClip(clip, label));
     }
 
-private AnimationClip GetPlayableClip(AnimationClip clip, string label)
+    private AnimationClip GetPlayableClip(AnimationClip clip, string label)
     {
-#if UNITY_EDITOR
-        if (!_stripScaleCurvesFromPlayableClips) return clip;
-
-        int scaleCurveCount = CountScaleCurveBindings(clip);
-        if (scaleCurveCount == 0) return clip;
-
-        string cleanedClipPath = GetCleanedClipPath(clip);
-        string sourceSignature = GetSourceClipSignature(clip, scaleCurveCount);
-        AnimationClip cachedClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(cleanedClipPath);
-
-        if (cachedClip != null && IsCachedCleanedClipCurrent(cleanedClipPath, cachedClip, sourceSignature))
-        {
-            if (_debugAnimationWeights)
-            {
-                Debug.Log($"[AnimationSystem_v2] Clip '{label}' has {scaleCurveCount} source scale curves. Using cached cleaned clip '{cachedClip.name}' at '{cleanedClipPath}'.", this);
-            }
-
-            return cachedClip;
-        }
-
-        if (cachedClip != null)
-        {
-            AssetDatabase.DeleteAsset(cleanedClipPath);
-        }
-
-        EnsureCleanedClipFolderExists();
-
-        AnimationClip cleanedClip = Instantiate(clip);
-        cleanedClip.name = Path.GetFileNameWithoutExtension(cleanedClipPath);
-        int removedCurveCount = RemoveScaleCurves(cleanedClip);
-
-        AssetDatabase.CreateAsset(cleanedClip, cleanedClipPath);
-        AssetDatabase.SaveAssets();
-        StoreCleanedClipSignature(cleanedClipPath, sourceSignature);
-
-        AnimationClip savedClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(cleanedClipPath);
-        Debug.Log($"[AnimationSystem_v2] Clip '{label}' has {scaleCurveCount} source scale curves. Created cached cleaned clip '{cleanedClip.name}' at '{cleanedClipPath}' with {removedCurveCount} scale curves removed.", this);
-        return savedClip != null ? savedClip : cleanedClip;
-#else
-        if (_stripScaleCurvesFromPlayableClips && _debugAnimationWeights)
-        {
-            Debug.LogWarning($"[AnimationSystem_v2] Scale-curve stripping for clip '{label}' requires UnityEditor APIs and only runs in the Editor. Use cleaned .anim assets for player builds.", this);
-        }
-
-        return clip;
-#endif
+        return CleanAnimClips.GetPlayableClip(
+            clip,
+            label,
+            _stripScaleCurvesFromPlayableClips,
+            _debugAnimationWeights,
+            this);
     }
 
-    private string GetCleanedClipPath(AnimationClip clip)
-    {
-        string cleanedClipName = CleanAssetFileName($"{clip.name.Replace('_', '-')}-ScaleCurvesStripped");
-        return $"{CleanedClipFolderPath}/{cleanedClipName}.anim";
-    }
-
-    private string CleanAssetFileName(string fileName)
-    {
-        foreach (char invalidCharacter in Path.GetInvalidFileNameChars())
-        {
-            fileName = fileName.Replace(invalidCharacter, '-');
-        }
-
-        return fileName;
-    }
-
-    private string GetSourceClipSignature(AnimationClip clip, int scaleCurveCount)
-    {
-        string sourcePath = AssetDatabase.GetAssetPath(clip);
-        string guid = AssetDatabase.AssetPathToGUID(sourcePath);
-        AssetDatabase.TryGetGUIDAndLocalFileIdentifier(clip, out string localGuid, out long localId);
-        Hash128 dependencyHash = string.IsNullOrEmpty(sourcePath) ? default : AssetDatabase.GetAssetDependencyHash(sourcePath);
-        return $"{CleanedClipSignaturePrefix}{guid}:{localGuid}:{localId}:{dependencyHash}:{clip.length:F6}:{clip.frameRate:F3}:{scaleCurveCount}";
-    }
-
-    private bool IsCachedCleanedClipCurrent(string cleanedClipPath, AnimationClip cachedClip, string sourceSignature)
-    {
-        if (CountScaleCurveBindings(cachedClip) > 0) return false;
-
-        AssetImporter importer = AssetImporter.GetAtPath(cleanedClipPath);
-        return importer != null && importer.userData == sourceSignature;
-    }
-
-    private void StoreCleanedClipSignature(string cleanedClipPath, string sourceSignature)
-    {
-        AssetImporter importer = AssetImporter.GetAtPath(cleanedClipPath);
-        if (importer == null) return;
-
-        importer.userData = sourceSignature;
-        importer.SaveAndReimport();
-    }
-
-    private void EnsureCleanedClipFolderExists()
-    {
-        if (AssetDatabase.IsValidFolder(CleanedClipFolderPath)) return;
-
-        if (!AssetDatabase.IsValidFolder("Assets/Character/Animations"))
-        {
-            Debug.LogWarning($"[AnimationSystem_v2] Expected cleaned clip parent folder 'Assets/Character/Animations' does not exist; creating fallback folder path may fail.", this);
-        }
-
-        AssetDatabase.CreateFolder("Assets/Character/Animations", "CleanedClips");
-    }
 
     private void ConnectClipPlayable(AnimationClipPlayable playable, AnimationMixerPlayable mixer, int port, string label)
     {
@@ -607,75 +510,17 @@ private AnimationClip GetPlayableClip(AnimationClip clip, string label)
 
         string scaleCurveInfo = "runtime binding details unavailable";
 #if UNITY_EDITOR
-        int scaleCurveCount = CountScaleCurveBindings(clip);
-        string scaleCurveSamples = GetScaleCurveSamples(clip, _maxScaleCurveSamplesToLog);
+        int scaleCurveCount = CleanAnimClips.CountScaleCurveBindings(clip);
+
+        string scaleCurveSamples =
+            CleanAnimClips.GetScaleCurveSamples(
+                clip,
+                _maxScaleCurveSamplesToLog);
         scaleCurveInfo = $"scaleCurveBindings={scaleCurveCount} stripScaleCurves={_stripScaleCurvesFromPlayableClips} samples=[{scaleCurveSamples}]";
 #endif
         Debug.Log($"[AnimationSystem_v2] Clip '{label}' name='{clip.name}' length={clip.length:F3}s frameRate={clip.frameRate:F1} wrapMode={clip.wrapMode} {scaleCurveInfo}", this);
     }
 
-#if UNITY_EDITOR
-    private int CountScaleCurveBindings(AnimationClip clip)
-    {
-        int scaleCurveCount = 0;
-        foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
-        {
-            if (IsScaleCurveBinding(binding)) scaleCurveCount++;
-        }
-
-        return scaleCurveCount;
-    }
-
-    private int RemoveScaleCurves(AnimationClip clip)
-    {
-        int removedCurveCount = 0;
-        foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
-        {
-            if (!IsScaleCurveBinding(binding)) continue;
-
-            AnimationUtility.SetEditorCurve(clip, binding, null);
-            removedCurveCount++;
-        }
-
-        return removedCurveCount;
-    }
-
-    private string GetScaleCurveSamples(AnimationClip clip, int maxSamples)
-    {
-        if (maxSamples <= 0) return string.Empty;
-
-        var builder = new StringBuilder();
-        int sampleCount = 0;
-        int totalScaleCurveCount = 0;
-
-        foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
-        {
-            if (!IsScaleCurveBinding(binding)) continue;
-
-            totalScaleCurveCount++;
-            if (sampleCount >= maxSamples) continue;
-
-            if (builder.Length > 0) builder.Append(", ");
-            builder.Append(binding.path);
-            builder.Append(':');
-            builder.Append(binding.propertyName);
-            sampleCount++;
-        }
-
-        if (totalScaleCurveCount > sampleCount)
-        {
-            if (builder.Length > 0) builder.Append(", ");
-            builder.Append("...");
-        }
-
-        return builder.ToString();
-    }
-
-    private bool IsScaleCurveBinding(EditorCurveBinding binding)
-    {
-        return binding.propertyName.IndexOf("scale", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-#endif
 
     private void OnDestroy()
     {

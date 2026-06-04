@@ -164,6 +164,8 @@ public class Combat : MonoBehaviour
         }
 
         SetCurrentTarget(target, CombatTargetLockMode.Hard);
+
+        Debug.Log($"Toggled Hard Lock", this);
         return true;
         
     }
@@ -271,5 +273,11 @@ public class Combat : MonoBehaviour
 
         return _input.direction.y <= -_softLockEscapeInputThreshold;
     }
-    
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        
+        Gizmos.DrawWireSphere(transform.position, _targetAcquisitionRadius);
+    }
 }

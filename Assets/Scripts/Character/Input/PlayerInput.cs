@@ -21,8 +21,9 @@ public class PlayerInput : MonoBehaviour
     public bool pflugTrigger;
     public bool alberTrigger;
     public bool ochsTrigger;
-    public bool langortTrigger; // should be contextual / triggered during in-combat transition
     public bool ironGateTrigger;
+    
+    public bool langortTrigger; // should be contextual / triggered during in-combat transition
 
     public bool leaveGuardTrigger;
     public bool targetLockTrigger;
@@ -57,8 +58,6 @@ public class PlayerInput : MonoBehaviour
 
     }
 
-
-
     public void OnMove(InputAction.CallbackContext ctx)
     {
         direction = ctx.ReadValue<Vector2>();
@@ -80,8 +79,6 @@ public class PlayerInput : MonoBehaviour
     public void OnLook(InputAction.CallbackContext ctx)
     {
         cameraDirection = ctx.ReadValue<Vector2>();
-        // Debug.Log($"Cam vector: {cameraDirection}");
-
     }
     
     void OnVomTag(InputAction.CallbackContext ctx)
@@ -116,17 +113,24 @@ public class PlayerInput : MonoBehaviour
     
     private void OnTargetLock(InputAction.CallbackContext obj)
     {
+        Debug.Log("Input: OnTargetLock");
         targetLockTrigger = true;
     }
 
     public bool ConsumeTargetLockTrigger()
     {
+        
+        Debug.Log($"Input: ConsumeTargetLockTrigger :: {targetLockTrigger}");
+
         if (!targetLockTrigger)
         {
             return false;
         }
 
         targetLockTrigger = false;
+        
+        Debug.Log($"Input: ConsumeTargetLockTrigger (after set to false) :: {targetLockTrigger}");
+
         return true;
     }
 

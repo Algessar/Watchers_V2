@@ -2512,7 +2512,7 @@ MonoBehaviour:
   vomTagTrigger: 0
   pflugTrigger: 0
   alberTrigger: 0
-  ochsTrigger: 1
+  ochsTrigger: 0
   langortTrigger: 0
   ironGateTrigger: 0
   leaveGuardTrigger: 0
