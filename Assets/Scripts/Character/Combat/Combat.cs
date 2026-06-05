@@ -52,8 +52,8 @@ public class Combat : MonoBehaviour
     // Public getters
     public CombatTargetLockMode TargetLockMode => _targetLockMode;
     public float LockRotationStrength => _lockRotationStrength;
-    public bool HasCurrentTarget => CurrentTarget != null;
-    public bool IsLockedOn => HasCurrentTarget && _targetLockMode != CombatTargetLockMode.None;
+    public bool HasTarget => CurrentTarget != null;
+    public bool IsLockedOn => HasTarget && _targetLockMode != CombatTargetLockMode.None;
     
     
         
@@ -81,7 +81,6 @@ public class Combat : MonoBehaviour
         bool hasAssignedTarget = CurrentTarget != null;
         bool hasInvalidTarget = hasAssignedTarget && !ValidateCurrentTarget();
         
-        UpdateTargetDistance();
 
         if (hasInvalidTarget)
         {
@@ -130,7 +129,7 @@ public class Combat : MonoBehaviour
     private bool AcquireSoftLockTarget()
     {
 
-        if (_softLockByDefault || _softLockCooldownTimer > 0f)
+        if (!_softLockByDefault || _softLockCooldownTimer > 0f)
         {
             if (_targetLockMode == CombatTargetLockMode.Soft)
             {
@@ -215,7 +214,12 @@ public class Combat : MonoBehaviour
             {
                 continue;
             }
+
+            nearestTarget = candidate;
+            nearestDistanceSqr = distanceSqr;
+
         }
+
 
         return nearestTarget;
 
@@ -276,8 +280,14 @@ public class Combat : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
-        
+        Gizmos.color = HasTarget ? Color.yellow : Color.red;
         Gizmos.DrawWireSphere(transform.position, _targetAcquisitionRadius);
+ 
+        if (CurrentTarget != null)
+        {
+            Gizmos.color = _targetLockMode == CombatTargetLockMode.Hard ? Color.red : Color.yellow;
+            Gizmos.DrawLine(transform.position, CurrentTarget.position);
+            Gizmos.DrawWireSphere(CurrentTarget.position, 0.3f);
+        }
     }
 }

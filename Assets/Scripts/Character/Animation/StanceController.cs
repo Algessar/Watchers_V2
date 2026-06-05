@@ -31,8 +31,6 @@ public class StanceController : MonoBehaviour
             Debug.LogError("[StanceController] PlayerInput component is missing; stance inputs cannot be read.", this);
             
         }
-
-        
     }
 
     private void Update()
