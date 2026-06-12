@@ -32,7 +32,6 @@ public class AnimationSystem_v2 : MonoBehaviour
     private float _blendTime;
 
     //Optional Clip registry
-    private Dictionary<string, AnimationClip> _registeredClips = new();
 
 
     [Header("Locomotion Clips")]
@@ -86,6 +85,8 @@ public class AnimationSystem_v2 : MonoBehaviour
     // Root motion control (off by default)
     public bool EnableRootMotion
     {
+        // Change clips when enabling root motion. Too messy to try to use the same ones.
+        
         get => _animator.applyRootMotion;
         set => _animator.applyRootMotion = value;
     }
@@ -146,7 +147,7 @@ public class AnimationSystem_v2 : MonoBehaviour
             }
         }
 
-        LogAnimationDebugIfNeeded(speed);
+        LogAnimationDebug(speed);
     }
 
     private void UpdateLocomotionWeights(float speed)
@@ -368,34 +369,34 @@ public class AnimationSystem_v2 : MonoBehaviour
     }
 
     /// <summary> Register a clip dynamically (optional). </summary>
-    public void RegisterClip(string id, AnimationClip clip, bool isCombatClip = true)
-    {
-        _registeredClips[id] = clip;
-        if (isCombatClip)
-        {
-            // Extend combat mixer if needed – for simplicity we require pre-allocated slots.
-            // This example assumes you will add slots beforehand; otherwise you can implement
-            // dynamic mixer resizing (more complex). For KISS, we just store for later use.
-            Debug.Log($"Clip '{id}' registered but dynamic adding to mixer not implemented. Use inspector fields instead.", this);
-        }
-    }
+    // public void RegisterClip(string id, AnimationClip clip, bool isCombatClip = true)
+    // {
+    //     _registeredClips[id] = clip;
+    //     if (isCombatClip)
+    //     {
+    //         // Extend combat mixer if needed – for simplicity we require pre-allocated slots.
+    //         // This example assumes you will add slots beforehand; otherwise you can implement
+    //         // dynamic mixer resizing (more complex). For KISS, we just store for later use.
+    //         Debug.Log($"Clip '{id}' registered but dynamic adding to mixer not implemented. Use inspector fields instead.", this);
+    //     }
+    // }
+    //
+    // public AnimationClip GetRegisteredClip(string id)
+    // {
+    //     _registeredClips.TryGetValue(id, out var clip);
+    //     return clip;
+    // }
+    //
+    // private void RegisterCombatClips()
+    // {
+    //     RegisterClip("vomTag", _vomTagClip, true);
+    //     RegisterClip("pflug", _pflugClip, true);
+    //     RegisterClip("alber", _alberClip, true);
+    //     RegisterClip("ochs", _ochsClip, true);
+    //     RegisterClip("ironGate", _ironGateClip, true);
+    // }
 
-    public AnimationClip GetRegisteredClip(string id)
-    {
-        _registeredClips.TryGetValue(id, out var clip);
-        return clip;
-    }
-
-    private void RegisterCombatClips()
-    {
-        RegisterClip("vomTag", _vomTagClip, true);
-        RegisterClip("pflug", _pflugClip, true);
-        RegisterClip("alber", _alberClip, true);
-        RegisterClip("ochs", _ochsClip, true);
-        RegisterClip("ironGate", _ironGateClip, true);
-    }
-
-    private void LogAnimationDebugIfNeeded(float speed)
+    private void LogAnimationDebug(float speed)
     {
         if (!_debugAnimationWeights || Time.time < _nextDebugLogTime) return;
 

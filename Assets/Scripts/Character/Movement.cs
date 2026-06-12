@@ -21,8 +21,8 @@ public class Movement : MonoBehaviour
     // Tweak these thresholds to your liking
     private const float MinDirectionSqrMagnitude = 0.0001f;
 
-    [SerializeField] private float walkStartSpeed = 0.2f;
-    [SerializeField] private float runStartSpeed = 0.7f;
+    // [SerializeField] private float walkStartSpeed = 0.2f; //NOTE: unused
+    // [SerializeField] private float runStartSpeed = 0.7f; //NOTE: unused
 
     public Vector3 moveDirection;
     [SerializeField] private float _moveSpeed = 5f;
@@ -68,7 +68,11 @@ public class Movement : MonoBehaviour
         
         moveDirection = CalculateCameraRelativeMoveDirection();
 
-        Controller(moveDirection * (_currentSpeed * Time.deltaTime));
+        if (!_animSystem.rootMotion)
+        {
+            Controller(moveDirection * (_currentSpeed * Time.deltaTime));
+        }
+        
         RotatePlayer(GetFacingDirection(moveDirection));
     }
 
