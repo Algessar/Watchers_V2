@@ -28,6 +28,8 @@ public class StanceController : MonoBehaviour
 
     public Action OnLeaveGuard;
 
+    public Stance stance;
+
 
     // private static AnimationClipPlayable clip;
 
@@ -56,6 +58,14 @@ public class StanceController : MonoBehaviour
         }
         
        
+    }
+
+    bool IsInGuard()
+    {
+        
+        
+        
+        return false;
     }
 
     private void Update()

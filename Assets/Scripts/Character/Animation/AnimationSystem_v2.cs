@@ -27,6 +27,8 @@ public class AnimationSystem_v2 : MonoBehaviour
     private readonly Dictionary<int, string> _stancePortToName = new();
     private int _currentStancePort = -1;
     private int _targetStancePort = -1;
+
+    public bool isInGuard => _currentStancePort !=  -1 ? true : false;
     
     public int CurrentStancePort => _currentStancePort;
     public int TargetStancePort => _targetStancePort;
@@ -81,7 +83,8 @@ public class AnimationSystem_v2 : MonoBehaviour
     [Range(0f, 1f)] [SerializeField] private float _runThreshold = 0.6f;
 
     [Header("Clip Sanitization")]
-    [Tooltip("When running in the Unity Editor, cache cleaned copies under Assets/Character/Animations/CleanedClips and remove scale curves before clips enter the playable graph.")]    [SerializeField] private bool _stripScaleCurvesFromPlayableClips = true;
+    [Tooltip("When running in the Unity Editor, cache cleaned copies under Assets/Character/Animations/CleanedClips and remove scale curves before clips enter the playable graph.")]   
+    [SerializeField] private bool _stripScaleCurvesFromPlayableClips = true;
     [SerializeField] private int _maxScaleCurveSamplesToLog = 8;
 
     [Header("Debug")]
@@ -160,8 +163,6 @@ public class AnimationSystem_v2 : MonoBehaviour
         }
 
         LogAnimationDebug(speed);
-
-
         
         // FixSpineRotation();
         
@@ -211,77 +212,137 @@ public class AnimationSystem_v2 : MonoBehaviour
         }
     }
 
-    // void FixSpineRotation()
+    // private void UpdateLocomotionWeights(float speed)
     // {
-    //     float smooth = 0.2f;
-    //     if (_currentStancePort != -1 && !_combat.CurrentTarget)
-    //     {
-    //         foreach (var spine in _spines)
-    //         {
-    //             
-    //             
-    //             Quaternion target = Quaternion.Euler(new Vector3(spine.rotation.z,
-    //                 _spines[0].transform.rotation.y, spine.transform.rotation.z));
-    //             
-    //             // spine.transform.rotation =
-    //             // Quaternion.Slerp(spine.transform.rotation, target, Time.deltaTime * smooth);
-    //             //
-    //             // var LookRotation = Quaternion.LookRotation(_combat.CurrentTarget.position);
-    //             //
-    //             // spine.rotation = LookRotation;
-    //         }
-    //     }
-    //     else if(_combat.CurrentTarget)
-    //     {
-    //         foreach (var spine in _spines)
-    //         {
-    //             // spine.transform.rotation =
-    //             //     Quaternion.Slerp(spine.transform.rotation, Quaternion.identity, Time.deltaTime * smooth);
-    //             var LookRotation = Quaternion.LookRotation(_combat.CurrentTarget.position);
+    //     bool shouldStrafe = isInGuard && (_combat.HasTarget || _input.targetLockTrigger);
+    //     float forwardSpeed = shouldStrafe ? 0f : Mathf.Clamp01(speed);
+    //     float strafeInput = _input.direction.x;
     //
-    //             spine.LookAt(_combat.CurrentTarget);
+    //     // ---- Forward movement (idle / walk / run) ----
+    //     float idle = 0f, walk = 0f, run = 0f;
+    //     if (forwardSpeed <= _runThreshold)
+    //     {
+    //         float t = _runThreshold > 0f ? forwardSpeed / _runThreshold : 0f;
+    //         idle = 1f - t;
+    //         walk = t;
+    //     }
+    //     else
+    //     {
+    //         float t = _runThreshold < 1f ? (forwardSpeed - _runThreshold) / (1f - _runThreshold) : 1f;
+    //         walk = 1f - t;
+    //         run = t;
+    //     }
+    //     _locomotionMixer.SetInputWeight(_idlePort, idle);
+    //     _locomotionMixer.SetInputWeight(_walkPort, walk);
+    //     _locomotionMixer.SetInputWeight(_runPort, run);
+    //
+    //     // ---- Strafe movement (overrides forward when active) ----
+    //     if (shouldStrafe)
+    //     {
+    //         float left = strafeInput < 0f ? -strafeInput : 0f;
+    //         float right = strafeInput > 0f ? strafeInput : 0f;
+    //         float total = left + right;
+    //
+    //         if (total > 0f)
+    //         {
+    //             left /= total;
+    //             right /= total;
+    //             // Disable forward locomotion while strafing
+    //             _locomotionMixer.SetInputWeight(_walkPort, 0f);
+    //             _locomotionMixer.SetInputWeight(_runPort, 0f);
+    //             _locomotionMixer.SetInputWeight(_idlePort, 0f);
     //         }
+    //         else
+    //         {
+    //             // No strafe input – show idle (or guard idle)
+    //             left = 0f; right = 0f;
+    //             _locomotionMixer.SetInputWeight(_idlePort, 1f);
+    //         }
+    //         _locomotionMixer.SetInputWeight(_strafePortLeft, left);
+    //         _locomotionMixer.SetInputWeight(_strafePortRight, right);
+    //     }
+    //     else
+    //     {
+    //         _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
+    //         _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
     //     }
     // }
 
+    private bool ShouldStrafe()
+    {
+        // Strafing only when hard locked onto a target AND in guard stance
+        return isInGuard && _combat != null && _combat.TargetLockMode == CombatTargetLockMode.Hard; // || _combat.TargetLockMode == CombatTargetLockMode.Soft;
+    }
+
     private void UpdateLocomotionWeights(float speed)
     {
-        float clampedSpeed = Mathf.Clamp01(speed);
-        float idleWeight = 0f, walkWeight = 0f, runWeight = 0f;
+        bool strafing = ShouldStrafe();
 
-        if (clampedSpeed <= _runThreshold)
+        if (strafing)
         {
-            float t = _runThreshold > 0f ? clampedSpeed / _runThreshold : 0f;
-            idleWeight = 1 - t;
-            walkWeight = t;
+            // ---- Strafe mode: disable forward locomotion completely ----
+            _locomotionMixer.SetInputWeight(_idlePort, 0f);
+            _locomotionMixer.SetInputWeight(_walkPort, 0f);
+            _locomotionMixer.SetInputWeight(_runPort, 0f);
+            
+            // Get horizontal input (-1..1) and convert to left/right positive weights
+            float rawHoriz = _input.direction.x;
+            float leftWeight = Mathf.Max(0f, -rawHoriz);   // left when rawHoriz negative
+            float rightWeight = Mathf.Max(0f, rawHoriz);   // right when rawHoriz positive
+            
+            float total = leftWeight + rightWeight;
+            if (total > 0f)
+            {
+                // Normalize so left+right = 1 (full blend)
+                leftWeight /= total;
+                rightWeight /= total;
+                // (Optional) play a strafe idle if you have one, otherwise leave idle weight 0
+                _locomotionMixer.SetInputWeight(_strafePortLeft, leftWeight);
+                _locomotionMixer.SetInputWeight(_strafePortRight, rightWeight);
+            }
+            else
+            {
+                // No horizontal input – stay in a "guard idle" (use normal idle clip as fallback)
+                _locomotionMixer.SetInputWeight(_idlePort, 1f);
+                _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
+                _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
+            }
         }
         else
         {
-            float t = _runThreshold < 1f ? (clampedSpeed - _runThreshold) / (1f - _runThreshold) : 1f;
-            walkWeight = 1 - t;
-            runWeight = t;
+            // ---- Normal locomotion (idle/walk/run) ----
+            _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
+            _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
+            
+            float clampedSpeed = Mathf.Clamp01(speed);
+            float idleWeight = 0f, walkWeight = 0f, runWeight = 0f;
+            
+            if (clampedSpeed <= _runThreshold)
+            {
+                float t = _runThreshold > 0f ? clampedSpeed / _runThreshold : 0f;
+                idleWeight = 1 - t;
+                walkWeight = t;
+            }
+            else
+            {
+                float t = _runThreshold < 1f ? (clampedSpeed - _runThreshold) / (1f - _runThreshold) : 1f;
+                walkWeight = 1 - t;
+                runWeight = t;
+            }
+            
+            _locomotionMixer.SetInputWeight(_idlePort, idleWeight);
+            _locomotionMixer.SetInputWeight(_walkPort, walkWeight);
+            _locomotionMixer.SetInputWeight(_runPort, runWeight);
         }
-
-        _locomotionMixer.SetInputWeight(_idlePort, idleWeight);
-        _locomotionMixer.SetInputWeight(_walkPort, walkWeight);
-        _locomotionMixer.SetInputWeight(_runPort, runWeight);
-
-
-        //Conditions for strafing
-        
-        float _strafeLeftWeight = 0f;
-        float _strafeRightWeight = 0f;
-
-        _locomotionMixer.SetInputWeight(_strafePortLeft,_strafeLeftWeight );
-        _locomotionMixer.SetInputWeight(_strafePortRight, _strafeRightWeight);
     }
-
+    
     private float GetMovementSpeed()
     {
         //TODO: change to GetComponent in Start
         return _input != null ? _input.moveAmount : 0f;
     }
 
+    
     public void SetFootIK(params AnimationClipPlayable[] clipPlayable)
     {
         for (int i = 0; i < clipPlayable.Length; i++)
@@ -402,6 +463,7 @@ public class AnimationSystem_v2 : MonoBehaviour
         return AnimationClipPlayable.Create(_graph, GetPlayableClip(clip, label));
     }
 
+    
     private AnimationClip GetPlayableClip(AnimationClip clip, string label)
     {
         return CleanAnimClips.GetPlayableClip(
@@ -411,7 +473,6 @@ public class AnimationSystem_v2 : MonoBehaviour
             _debugAnimationWeights,
             this);
     }
-
 
     private void ConnectClipPlayable(AnimationClipPlayable playable, AnimationMixerPlayable mixer, int port, string label)
     {

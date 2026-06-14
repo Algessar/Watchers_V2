@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Animations;
 
 [CreateAssetMenu(fileName = "Stance", menuName = "ScriptableObjects/Stances", order = 1)]
@@ -7,9 +8,16 @@ public class Stance : ScriptableObject
     public string Name;
     public AnimationClipPlayable playable;
 
+    public bool isActive;
+
     public StanceType type;
 
-    public string ConvertTypeToString()
+    private void OnValidate()
+    {
+        Name = ConvertTypeToString();
+    }
+
+    private string ConvertTypeToString()
     {
         string name = string.Empty;
         
@@ -19,19 +27,19 @@ public class Stance : ScriptableObject
                 return name = "VomTag";
                 
             case StanceType.Pflug:
-                return name = "VomTag";
+                return name = "Pflug";
                 
             case StanceType.Alber:
-                return name = "VomTag";
+                return name = "Alber";
                 
             case StanceType.Ochs:
-                return name = "VomTag";
+                return name = "Ochs";
                 
             case StanceType.Langort:
-                return name = "VomTag";
+                return name = "Langort";
                 
             case StanceType.IronGate:
-                return name = "VomTag";
+                return name = "IronGate";
                 
             
         }
