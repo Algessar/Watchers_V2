@@ -34,6 +34,8 @@ public class Combat : MonoBehaviour
     private float _currentTargetDistance = NoTargetDistance;
     public CombatTarget CurrentCombatTarget => _currentCombatTarget;
 
+    public GameObject targetIndicator;
+
     [Header("Locking")]
     
     private CombatTargetLockMode _targetLockMode = CombatTargetLockMode.None;
@@ -252,6 +254,26 @@ public class Combat : MonoBehaviour
         _currentCombatTarget = target;
         CurrentTarget = target != null ? target.TargetPoint : null;
         _targetLockMode = target != null ? lockMode : CombatTargetLockMode.None;
+
+        if (!CurrentTarget)
+        {
+            targetIndicator.SetActive(false);
+        }
+        else
+        {
+            targetIndicator.SetActive(true);
+            targetIndicator.transform.SetParent(target.transform, true);
+            // Set the actual position if needed
+
+            var Bounds = CurrentTarget.GetComponent<Collider>().bounds;
+            
+            targetIndicator.transform.localPosition = new Vector3(CurrentTarget.transform.localPosition.x, Bounds.size.y + 2, CurrentTarget.transform.localPosition.z);
+        }
+        
+        
+        
+        
+        
         UpdateTargetDistance();
     }
     

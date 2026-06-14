@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 #if UNITY_EDITOR
-using UnityEditor;
+
 #endif
 
 public class AnimationSystem_v2 : MonoBehaviour
@@ -16,19 +15,22 @@ public class AnimationSystem_v2 : MonoBehaviour
 
     private PlayerInput _input;
     private Animator _animator;
+    private Combat _combat;
     private PlayableGraph _graph;
     private AnimationLayerMixerPlayable _layerMixer;
 
     private AnimationMixerPlayable _locomotionMixer;
-    private int _idlePort, _walkPort, _runPort;
+    private int _idlePort, _walkPort, _runPort, _strafePortLeft, _strafePortRight;
 
     private AnimationMixerPlayable _combatMixer;
     private Dictionary<string, int> _stanceNameToPort;
     private readonly Dictionary<int, string> _stancePortToName = new();
     private int _currentStancePort = -1;
-    public int CurrentStancePort => _currentStancePort;
-    
     private int _targetStancePort = -1;
+    
+    public int CurrentStancePort => _currentStancePort;
+    public int TargetStancePort => _targetStancePort;
+    
     private float _blendTime;
 
     //Optional Clip registry
@@ -39,11 +41,18 @@ public class AnimationSystem_v2 : MonoBehaviour
     [SerializeField] private AnimationClip _idleClip;
     [SerializeField] private AnimationClip _walkClip;
     [SerializeField] private AnimationClip _runClip;
+    [SerializeField] private AnimationClip _strafeLeftClip;
+    [SerializeField] private AnimationClip _strafeRightClip;
+
+    [SerializeField] private int _numLocomotionClips = 5;
 
 
     private AnimationClipPlayable _idlePlayable;
     private AnimationClipPlayable _walkPlayable;
     private AnimationClipPlayable _runPlayable;
+    private AnimationClipPlayable _strafeLeftPlayable;
+    private AnimationClipPlayable _strafeRightPlayable;
+    
 
     public bool rootMotion;
     public bool footIk = false;
@@ -57,9 +66,16 @@ public class AnimationSystem_v2 : MonoBehaviour
     [SerializeField] private AnimationClip _ironGateClip;
     // [SerializeField] private AnimationClip _langortClip; // contextual, not directly triggered
 
+    [SerializeField] private int _numStanceClips;
+    
     [Header("Avatar Mask")]
     [SerializeField] private AvatarMask _upperBodyMask; // restricts combat layer to chest, arms, head
 
+    [Header("Avatar Mask / Bone Corrections")]
+    
+    [Tooltip("Rotation Fix. Index 0 is the target bone")]
+    [SerializeField] private List<Transform> _spines;
+    
     [Header("Settings")]
     [SerializeField] private float _stanceBlendDuration = 0.02f;
     [Range(0f, 1f)] [SerializeField] private float _runThreshold = 0.6f;
@@ -82,14 +98,7 @@ public class AnimationSystem_v2 : MonoBehaviour
     private Transform _debugSpine;
 
 
-    // Root motion control (off by default)
-    public bool EnableRootMotion
-    {
-        // Change clips when enabling root motion. Too messy to try to use the same ones.
-        
-        get => _animator.applyRootMotion;
-        set => _animator.applyRootMotion = value;
-    }
+
 
     private void Start()
     {
@@ -99,17 +108,20 @@ public class AnimationSystem_v2 : MonoBehaviour
 
         if (_animator == null) throw new MissingComponentException("Animator required");
 
+        _combat = GetComponent<Combat>();
+
         _animator.applyRootMotion = rootMotion;
         CacheDebugScaleProbeBones();
 
         CreatePlayableGraph();
         // RegisterCombatClips(); //optional, incomplete
+
+        _animator.applyRootMotion
+            = true;
     }
 
     private void Update()
     {
-        _animator.applyRootMotion = rootMotion;
-
         // 1. Update locomotion weights based on movement speed
         float speed = GetMovementSpeed();
         UpdateLocomotionWeights(speed);
@@ -148,7 +160,89 @@ public class AnimationSystem_v2 : MonoBehaviour
         }
 
         LogAnimationDebug(speed);
+
+
+        
+        // FixSpineRotation();
+        
     }
+
+    private void LateUpdate()
+    {
+        FixSpineRotation();
+    }
+
+    [SerializeField] float _yaw = 25;
+    [SerializeField] float _pitch = 25;
+  
+    
+    private void FixSpineRotation()
+    {
+        if (!_combat.CurrentTarget)
+        {
+            return;
+        }
+
+        Vector3 targetDirection =
+            (_combat.CurrentTarget.position - transform.position).normalized;
+
+        Vector3 localDirection =
+            transform.InverseTransformDirection(targetDirection);
+
+        float yaw =
+            Mathf.Atan2(localDirection.x, localDirection.z) * Mathf.Rad2Deg;
+
+        float pitch =
+            -Mathf.Atan2(
+                localDirection.y,
+                new Vector2(localDirection.x, localDirection.z).magnitude)
+            * Mathf.Rad2Deg;
+
+        yaw = Mathf.Clamp(yaw, -_yaw, _yaw);
+        pitch = Mathf.Clamp(pitch, -_pitch, _pitch);
+
+        float perBoneYaw = yaw / _spines.Count;
+        float perBonePitch = pitch / _spines.Count;
+
+        foreach (Transform spine in _spines)
+        {
+            spine.localRotation *=
+                Quaternion.Euler(perBonePitch, perBoneYaw, 0f);
+        }
+    }
+
+    // void FixSpineRotation()
+    // {
+    //     float smooth = 0.2f;
+    //     if (_currentStancePort != -1 && !_combat.CurrentTarget)
+    //     {
+    //         foreach (var spine in _spines)
+    //         {
+    //             
+    //             
+    //             Quaternion target = Quaternion.Euler(new Vector3(spine.rotation.z,
+    //                 _spines[0].transform.rotation.y, spine.transform.rotation.z));
+    //             
+    //             // spine.transform.rotation =
+    //             // Quaternion.Slerp(spine.transform.rotation, target, Time.deltaTime * smooth);
+    //             //
+    //             // var LookRotation = Quaternion.LookRotation(_combat.CurrentTarget.position);
+    //             //
+    //             // spine.rotation = LookRotation;
+    //         }
+    //     }
+    //     else if(_combat.CurrentTarget)
+    //     {
+    //         foreach (var spine in _spines)
+    //         {
+    //             // spine.transform.rotation =
+    //             //     Quaternion.Slerp(spine.transform.rotation, Quaternion.identity, Time.deltaTime * smooth);
+    //             var LookRotation = Quaternion.LookRotation(_combat.CurrentTarget.position);
+    //
+    //             spine.LookAt(_combat.CurrentTarget);
+    //         }
+    //     }
+    // }
 
     private void UpdateLocomotionWeights(float speed)
     {
@@ -171,6 +265,15 @@ public class AnimationSystem_v2 : MonoBehaviour
         _locomotionMixer.SetInputWeight(_idlePort, idleWeight);
         _locomotionMixer.SetInputWeight(_walkPort, walkWeight);
         _locomotionMixer.SetInputWeight(_runPort, runWeight);
+
+
+        //Conditions for strafing
+        
+        float _strafeLeftWeight = 0f;
+        float _strafeRightWeight = 0f;
+
+        _locomotionMixer.SetInputWeight(_strafePortLeft,_strafeLeftWeight );
+        _locomotionMixer.SetInputWeight(_strafePortRight, _strafeRightWeight);
     }
 
     private float GetMovementSpeed()
@@ -203,30 +306,39 @@ public class AnimationSystem_v2 : MonoBehaviour
         _layerMixer = AnimationLayerMixerPlayable.Create(_graph, 2);
 
         // --- Layer 0: Locomotion (full body) ---------------------------------
-        _locomotionMixer = AnimationMixerPlayable.Create(_graph, 3);
+        _locomotionMixer = AnimationMixerPlayable.Create(_graph, _numLocomotionClips);
         _idlePort = 0;
         _walkPort = 1;
         _runPort = 2;
+        _strafePortLeft = 3;
+        _strafePortRight = 4;
 
         _idlePlayable = CreateClipPlayable(_idleClip, "Idle");
         _walkPlayable = CreateClipPlayable(_walkClip, "Walk");
         _runPlayable = CreateClipPlayable(_runClip, "Run");
+        _strafeLeftPlayable = CreateClipPlayable(_strafeLeftClip, "StrafeLeft");
+        _strafeRightPlayable = CreateClipPlayable(_strafeRightClip, "StrafeRight");
+        
         SetFootIK(_idlePlayable, _walkPlayable, _runPlayable);
 
         ConnectClipPlayable(_idlePlayable, _locomotionMixer, _idlePort, "Idle");
         ConnectClipPlayable(_walkPlayable, _locomotionMixer, _walkPort, "Walk");
         ConnectClipPlayable(_runPlayable, _locomotionMixer, _runPort, "Run");
+        ConnectClipPlayable(_strafeLeftPlayable, _locomotionMixer, _strafePortLeft, "StrafeLeft");
+        ConnectClipPlayable(_strafeRightPlayable, _locomotionMixer, _strafePortRight, "StrafeRight");
 
         _locomotionMixer.SetInputWeight(_idlePort, 1f);
         _locomotionMixer.SetInputWeight(_walkPort, 0f);
         _locomotionMixer.SetInputWeight(_runPort, 0f);
+        _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
+        _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
 
         _layerMixer.ConnectInput(LocomotionLayer, _locomotionMixer, 0, 1f);
         _layerMixer.SetInputWeight(LocomotionLayer, 1f);
         // Do not apply the upper-body mask to locomotion. The base layer must remain full-body,
         // otherwise the legs have no source to play walk/run once the combat layer is masked.
 
-        int stanceCount = 5;
+        int stanceCount = _numStanceClips;
         _combatMixer = AnimationMixerPlayable.Create(_graph, stanceCount);
         _stanceNameToPort = new();
         _stancePortToName.Clear();
@@ -251,18 +363,22 @@ public class AnimationSystem_v2 : MonoBehaviour
         AttachStance(_alberClip, "alber", 2);
         AttachStance(_ochsClip, "ochs", 3);
         AttachStance(_ironGateClip, "ironGate", 4);
+        AttachStance(_ironGateClip, "langort", 5);
+
 
         _layerMixer.ConnectInput(CombatLayer, _combatMixer, 0, 1f);
         if (_upperBodyMask != null)
         {
             _layerMixer.SetLayerMaskFromAvatarMask(CombatLayer, _upperBodyMask);
+            
+
         }
         else
         {
             Debug.LogWarning("[AnimationSystem_v2] UpperBodyMask is not assigned. Combat stances will override the full body and can block locomotion legs.", this);
         }
 
-        _layerMixer.SetInputWeight(CombatLayer, 0f);
+        _layerMixer.SetInputWeight(CombatLayer, -1f);
         _currentStancePort = -1;
         _targetStancePort = -1;
 
@@ -271,6 +387,8 @@ public class AnimationSystem_v2 : MonoBehaviour
 
         LogClipDiagnostics();
         LogAnimationDebug("graph created", GetMovementSpeed(), force: false);
+        
+        
     }
 
     private AnimationClipPlayable CreateClipPlayable(AnimationClip clip, string label)
@@ -278,7 +396,7 @@ public class AnimationSystem_v2 : MonoBehaviour
         if (clip == null)
         {
             Debug.LogError($"[AnimationSystem_v2] Required animation clip '{label}' is not assigned.", this);
-            return default(AnimationClipPlayable);
+            return default;
         }
 
         return AnimationClipPlayable.Create(_graph, GetPlayableClip(clip, label));
@@ -367,34 +485,6 @@ public class AnimationSystem_v2 : MonoBehaviour
         LogAnimationDebug("HideStance", GetMovementSpeed(), force: false);
         Debug.Log($"HideStance, current: {_currentStancePort}, target: {_targetStancePort} ", this);
     }
-
-    /// <summary> Register a clip dynamically (optional). </summary>
-    // public void RegisterClip(string id, AnimationClip clip, bool isCombatClip = true)
-    // {
-    //     _registeredClips[id] = clip;
-    //     if (isCombatClip)
-    //     {
-    //         // Extend combat mixer if needed – for simplicity we require pre-allocated slots.
-    //         // This example assumes you will add slots beforehand; otherwise you can implement
-    //         // dynamic mixer resizing (more complex). For KISS, we just store for later use.
-    //         Debug.Log($"Clip '{id}' registered but dynamic adding to mixer not implemented. Use inspector fields instead.", this);
-    //     }
-    // }
-    //
-    // public AnimationClip GetRegisteredClip(string id)
-    // {
-    //     _registeredClips.TryGetValue(id, out var clip);
-    //     return clip;
-    // }
-    //
-    // private void RegisterCombatClips()
-    // {
-    //     RegisterClip("vomTag", _vomTagClip, true);
-    //     RegisterClip("pflug", _pflugClip, true);
-    //     RegisterClip("alber", _alberClip, true);
-    //     RegisterClip("ochs", _ochsClip, true);
-    //     RegisterClip("ironGate", _ironGateClip, true);
-    // }
 
     private void LogAnimationDebug(float speed)
     {

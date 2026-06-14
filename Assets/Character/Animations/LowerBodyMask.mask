@@ -16,13 +16,13 @@ AvatarMask:
   - m_Path: Body-Retopo
     m_Weight: 0
   - m_Path: Deform
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/DEF-spine
     m_Weight: 1
   - m_Path: Deform/DEF-spine/DEF-pelvis.L
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/DEF-spine/DEF-pelvis.R
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/DEF-spine/DEF-Side_Scabbard
     m_Weight: 1
   - m_Path: Deform/DEF-spine/DEF-spine.001

@@ -18,7 +18,7 @@ AvatarMask:
   - m_Path: Deform
     m_Weight: 0
   - m_Path: Deform/root
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/root/DEF-spine
     m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-pelvis.L
@@ -28,13 +28,13 @@ AvatarMask:
   - m_Path: Deform/root/DEF-spine/DEF-Side_Scabbard
     m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-spine.001
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002
     m_Weight: 1
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-Back_scabbard
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-breast.L
     m_Weight: 1
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-breast.R
@@ -144,9 +144,9 @@ AvatarMask:
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-shoulder.R/DEF-upper_arm.R/DEF-upper_arm.R.001/DEF-forearm.R/DEF-forearm.R.001/DEF-hand.R/weapon_hand.R
     m_Weight: 1
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-spine.004
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-spine.004/DEF-spine.005
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-spine.004/DEF-spine.005/DEF-spine.006
     m_Weight: 1
   - m_Path: Deform/root/DEF-spine/DEF-spine.001/DEF-spine.002/DEF-spine.003/DEF-spine.004/DEF-spine.005/DEF-spine.006/DEF-brow.B.L

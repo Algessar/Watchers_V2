@@ -18,10 +18,10 @@ public class PlayerInput : MonoBehaviour
     [Header("Combat")] 
     public bool vomTagTrigger;
 
-    public bool pflugTrigger;
-    public bool alberTrigger;
-    public bool ochsTrigger;
-    public bool ironGateTrigger;
+    public bool pflugTrigger = false;
+    public bool alberTrigger = false;
+    public bool ochsTrigger = false;
+    public bool ironGateTrigger = false;
     
     public bool langortTrigger; // should be contextual / triggered during in-combat transition
 
@@ -57,6 +57,15 @@ public class PlayerInput : MonoBehaviour
         _actions.Player.TargetLock.started += OnTargetLock;
 
     }
+
+    private void Start()
+    {
+        pflugTrigger = false;
+        alberTrigger = false;
+        ochsTrigger = false;
+        ironGateTrigger = false;
+    }
+
 
     public void OnMove(InputAction.CallbackContext ctx)
     {

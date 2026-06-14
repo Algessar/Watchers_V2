@@ -1,5 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
+
+public enum StanceType
+{
+    VomTag,
+    Alber,
+    Pflug,
+    Ochs,
+    IronGate,
+    Langort,
+    
+}
+
+
 
 public class StanceController : MonoBehaviour
 {
@@ -13,6 +27,15 @@ public class StanceController : MonoBehaviour
     public Action OnIronGate;
 
     public Action OnLeaveGuard;
+
+
+    // private static AnimationClipPlayable clip;
+
+    // private Dictionary<StanceType, Func<Stance, Stance>> _transitions = new Dictionary<StanceType, Func<Stance, Stance>>()
+    // {
+    //     { StanceType.VomTag , b => new Stance("", clip)}
+    // };
+
 
     [SerializeField] private bool _debugStanceInput = true;
 
@@ -31,6 +54,8 @@ public class StanceController : MonoBehaviour
             Debug.LogError("[StanceController] PlayerInput component is missing; stance inputs cannot be read.", this);
             
         }
+        
+       
     }
 
     private void Update()
@@ -75,6 +100,81 @@ public class StanceController : MonoBehaviour
             _input.leaveGuardTrigger = false;
             OnLeaveGuard?.Invoke();
             _animSystem.HideStance();
+        }
+    }
+
+    public void Transition(string from, string to)
+    {
+        if (from == "vomTag")
+        {
+            if (to == "  ")
+            {
+                
+            }
+            else if (to == "  ")
+            {
+                
+            }
+            else if (to == "  ")
+            {
+                
+            }
+            else if (to == "  ")
+            {
+                
+            }
+        }
+        
+        else if (from == "ochs")
+        {
+            // Transition to VomTag then Langort
+        }
+        
+        else if (from == "pflug")
+        {
+
+            if (to == "alber")
+            {
+                // Langort
+                // NOTE: Should this go like, halfway to VomTag before langort? Then landing in Alber.
+            }
+            else if (to == "langort")
+            {
+                // Thrust
+            }
+            else if (to == "ochs")
+            {
+                // Interpolate
+            }
+            else if (to == "")
+            {
+                
+            }
+            
+        }
+        
+        else if (from == "alber")
+        {
+
+            if (to == "pflug" || to == "alber")
+            {
+                // Transition to Langort
+            }
+            else if (to == "ochs")
+            {
+                // Transition to zwerchau
+            }
+            else if (to == "langort")
+            {
+                //Perform thrust
+            }
+
+        }
+        
+        else if (from == "vomTag")
+        {
+            // Transition to Langort
+            
         }
     }
 
