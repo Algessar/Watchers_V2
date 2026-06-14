@@ -1,10 +1,13 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Playables;
 
 public class Movement : MonoBehaviour
 {
+    private AnimationSystem_v2 _animSystem;
     private PlayerInput _input;
     private Camera _camera;
+    private Combat _combat;
 
     private const float MinDirectionSqrMagnitude = 0.0001f;
 
@@ -15,14 +18,22 @@ public class Movement : MonoBehaviour
 
     private void Start()
     {
+        _cam = Camera.main;
         _input = GetComponent<PlayerInput>();
         _camera = Camera.main;
+        _combat = GetComponent<Combat>();
+        _animSystem = GetComponent<AnimationSystem_v2>();
     }
 
     private void Update()
     {
         Vector3 moveDirection = CalculateCameraRelativeMoveDirection();
-        RotatePlayer(GetFacingDirection(moveDirection));
+        
+        if (_combat == null || !_combat.IsLockedOn)
+        {
+            RotatePlayer(GetFacingDirection(moveDirection));
+        }
+        // RotatePlayer(GetFacingDirection(moveDirection));
     }
 
     private Vector3 CalculateCameraRelativeMoveDirection()
@@ -80,5 +91,78 @@ public class Movement : MonoBehaviour
         }
         
         return targetDirection.normalized;
+    }
+    
+    private float _currentForwardSpeed;
+    private float _currentStrafeFactor;
+    private Camera _cam;
+
+    public void UpdateLocomotionBlends()
+    {
+        float speed = _animSystem.GetMovementSpeed();
+        bool isLocked = _combat != null && _combat.IsLockedOn;
+
+        if (!isLocked)
+        {
+            // No target: classic forward-only locomotion
+            _animSystem.UpdateLocomotionWeights(speed);
+            return;
+        }
+
+        // Locked on: compute forward/strafe from input relative to character's facing (toward target)
+        Vector3 inputDir = GetCameraRelativeMoveDirection(); // reuse from Movement
+        Vector3 forward = transform.forward;
+        Vector3 right = transform.right;
+
+        float forwardInput = Vector3.Dot(inputDir, forward);
+        float rightInput = Vector3.Dot(inputDir, right);
+
+        _currentForwardSpeed = Mathf.Clamp01(speed) * Mathf.Clamp01(forwardInput); // forward only (0..1)
+        float strafe = rightInput; // -1 left, +1 right
+
+        // Map forward speed to walk/run as before (using _runThreshold)
+        float clampedSpeed = Mathf.Clamp01(_currentForwardSpeed);
+        float walkWeight = 0f, runWeight = 0f;
+
+        if (clampedSpeed <= _animSystem.RunThreshold)
+        {
+            float t = _animSystem.RunThreshold > 0f ? clampedSpeed / _animSystem.RunThreshold : 0f;
+            walkWeight = t;
+            // idle weight handled separately, but we keep idle at 1-t only if no strafe?
+            // Simpler: let idle weight = 0 when moving, 1 when stopped.
+        }
+        else
+        {
+            float t = _animSystem.RunThreshold < 1f ? (clampedSpeed - _animSystem.RunThreshold) / (1f - _animSystem.RunThreshold) : 1f;
+            walkWeight = 1 - t;
+            runWeight = t;
+        }
+
+        float idleWeight = (clampedSpeed < 0.05f && Mathf.Abs(strafe) < 0.05f) ? 1f : 0f;
+
+        // Blend strafe weights
+        float leftWeight = Mathf.Max(0f, -strafe);
+        float rightWeight = Mathf.Max(0f, strafe);
+
+        // Apply to mixer
+        _animSystem._locomotionMixer.SetInputWeight(_animSystem._idlePort, idleWeight);
+        _animSystem._locomotionMixer.SetInputWeight(_animSystem._walkPort, walkWeight);
+        _animSystem._locomotionMixer.SetInputWeight(_animSystem._runPort, runWeight);
+        _animSystem._locomotionMixer.SetInputWeight(_animSystem._strafePortLeft, leftWeight);
+        _animSystem._locomotionMixer.SetInputWeight(_animSystem._strafePortRight, rightWeight);
+    }
+
+    // Helper to get camera-relative input direction (same as Movement.CalculateCameraRelativeMoveDirection)
+    private Vector3 GetCameraRelativeMoveDirection()
+    {
+        if (!_input) return Vector3.zero;
+        Vector2 input = Vector2.ClampMagnitude(_input.direction, 1f);
+        if (input.sqrMagnitude < 0.0001f) return Vector3.zero;
+
+        if (!_cam) return new Vector3(input.x, 0f, input.y).normalized;
+
+        Vector3 forward = Vector3.ProjectOnPlane(_cam.transform.forward, Vector3.up).normalized;
+        Vector3 right = Vector3.ProjectOnPlane(_cam.transform.right, Vector3.up).normalized;
+        return (forward * input.y + right * input.x).normalized;
     }
 }

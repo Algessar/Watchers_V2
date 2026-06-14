@@ -3,7 +3,62 @@ guid: 0357bdf8a695b154f96b443c479c110c
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Black
+    second: {fileID: 2100000, guid: 7a3ab64548cb40b4c8e141a414ce91f9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Body
+    second: {fileID: 2100000, guid: 6e7a628f28f5e5c44b3f5d42cf9ec783, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Chape.001
+    second: {fileID: 2100000, guid: 7fda433b43e51304dbf5c73eaec1176c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: EyeWhite
+    second: {fileID: 2100000, guid: 595b9f5c219c1e240ab8ac11da596567, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Furniture.001
+    second: {fileID: 2100000, guid: 3abaf9e7b4bac9249bb9e84796334c83, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Gloves_leather
+    second: {fileID: 2100000, guid: 565ca1f7445920447b0e2091c89daaf9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Handle.001
+    second: {fileID: 2100000, guid: 87d37db58a47beb4fbb9ab622083e122, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Iris
+    second: {fileID: 2100000, guid: a94819718ffd77b46a026d7a62c16dc8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: JCF Fancy Glass.001
+    second: {fileID: 2100000, guid: d870f0439ebe20b479b8ed0b4f562cb5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Pupil
+    second: {fileID: 2100000, guid: fbad8e0a50502214c916011250f9ee93, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Silver_Wire.001
+    second: {fileID: 2100000, guid: b1bb3cc1722746a4cb01046cb637ff20, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

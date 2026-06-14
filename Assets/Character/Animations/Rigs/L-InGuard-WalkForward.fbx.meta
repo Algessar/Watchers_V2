@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: c0db9717674aeba4f8dcf3592bfdda62
+guid: 21c26e0c080c0db4d8a7554834cac8ed
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -22,7 +22,7 @@ ModelImporter:
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
-    animationCompression: 3
+    animationCompression: 1
     animationRotationError: 0.5
     animationPositionError: 0.5
     animationScaleError: 0.5
@@ -31,23 +31,23 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: B_Strafe-Right
-      takeName: B_Strafe-Right
-      internalID: 7067258550409732938
-      firstFrame: 27
-      lastFrame: 50
+      name: B_L-InGuard-WalkForward
+      takeName: B_L-InGuard-WalkForward
+      internalID: -6887882509470864744
+      firstFrame: 0
+      lastFrame: 35
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
       cycleOffset: 0
       loop: 0
-      hasAdditiveReferencePose: 0
+      hasAdditiveReferencePose: 1
       loopTime: 1
-      loopBlend: 0
+      loopBlend: 1
       loopBlendOrientation: 1
       loopBlendPositionY: 1
       loopBlendPositionXZ: 0
-      keepOriginalOrientation: 0
+      keepOriginalOrientation: 1
       keepOriginalPositionY: 1
       keepOriginalPositionXZ: 1
       heightFromFeet: 0

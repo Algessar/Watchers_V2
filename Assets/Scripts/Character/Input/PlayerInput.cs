@@ -130,7 +130,7 @@ public class PlayerInput : MonoBehaviour
     public bool ConsumeTargetLockTrigger()
     {
         
-        Debug.Log($"Input: ConsumeTargetLockTrigger :: {targetLockTrigger}");
+        // Debug.Log($"Input: ConsumeTargetLockTrigger :: {targetLockTrigger}");
 
         if (!targetLockTrigger)
         {
@@ -139,7 +139,7 @@ public class PlayerInput : MonoBehaviour
 
         targetLockTrigger = false;
         
-        Debug.Log($"Input: ConsumeTargetLockTrigger (after set to false) :: {targetLockTrigger}");
+        // Debug.Log($"Input: ConsumeTargetLockTrigger (after set to false) :: {targetLockTrigger}");
 
         return true;
     }

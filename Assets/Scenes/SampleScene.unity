@@ -2626,7 +2626,6 @@ GameObject:
   - component: {fileID: 1913763947}
   - component: {fileID: 1913763949}
   - component: {fileID: 1913763950}
-  - component: {fileID: 1913763951}
   m_Layer: 0
   m_Name: PlayerParent
   m_TagString: Untagged
@@ -2717,6 +2716,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd1e61d85e6711b4aaa1624003f89f93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimationSystem_v2
+  _idlePort: 0
+  _walkPort: 0
+  _runPort: 0
+  _strafePortLeft: 0
+  _strafePortRight: 0
   _idleClip: {fileID: 8130951744210091813, guid: 0357bdf8a695b154f96b443c479c110c, type: 3}
   _walkClip: {fileID: 296318855181814372, guid: 0357bdf8a695b154f96b443c479c110c, type: 3}
   _runClip: {fileID: 3638018725583969807, guid: 0357bdf8a695b154f96b443c479c110c, type: 3}
@@ -2739,7 +2743,6 @@ MonoBehaviour:
   - {fileID: 678320684}
   - {fileID: 2081885224}
   _stanceBlendDuration: 0.12
-  _runThreshold: 0.27
   _stripScaleCurvesFromPlayableClips: 1
   _maxScaleCurveSamplesToLog: 8
   _debugAnimationWeights: 0
@@ -2797,27 +2800,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!65 &1913763951
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1913763939}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.8956281, y: 1.5018044, z: 0.6871944}
-  m_Center: {x: 0, y: 0.75567937, z: 0}
 --- !u!1 &1979420161
 GameObject:
   m_ObjectHideFlags: 0

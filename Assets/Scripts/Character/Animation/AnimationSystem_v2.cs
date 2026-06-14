@@ -16,11 +16,16 @@ public class AnimationSystem_v2 : MonoBehaviour
     private PlayerInput _input;
     private Animator _animator;
     private Combat _combat;
+    private Movement _movement;
     private PlayableGraph _graph;
     private AnimationLayerMixerPlayable _layerMixer;
 
-    private AnimationMixerPlayable _locomotionMixer;
-    private int _idlePort, _walkPort, _runPort, _strafePortLeft, _strafePortRight;
+    public AnimationMixerPlayable _locomotionMixer;
+    public int _idlePort;
+    public int _walkPort;
+    public int _runPort;
+    public int _strafePortLeft;
+    public int _strafePortRight;
 
     private AnimationMixerPlayable _combatMixer;
     private Dictionary<string, int> _stanceNameToPort;
@@ -80,7 +85,10 @@ public class AnimationSystem_v2 : MonoBehaviour
     
     [Header("Settings")]
     [SerializeField] private float _stanceBlendDuration = 0.02f;
-    [Range(0f, 1f)] [SerializeField] private float _runThreshold = 0.6f;
+
+    [field: Range(0f, 1f)]
+    [field: SerializeField]
+    public float RunThreshold { get; } = 0.6f;
 
     [Header("Clip Sanitization")]
     [Tooltip("When running in the Unity Editor, cache cleaned copies under Assets/Character/Animations/CleanedClips and remove scale curves before clips enter the playable graph.")]   
@@ -100,18 +108,15 @@ public class AnimationSystem_v2 : MonoBehaviour
     private Transform _debugLeftFoot;
     private Transform _debugSpine;
 
-
-
-
     private void Start()
     {
         _input = GetComponent<PlayerInput>();
-
         _animator = GetComponentInChildren<Animator>();
+        _combat = GetComponent<Combat>();
+        _movement = GetComponent<Movement>();
 
         if (_animator == null) throw new MissingComponentException("Animator required");
 
-        _combat = GetComponent<Combat>();
 
         _animator.applyRootMotion = rootMotion;
         CacheDebugScaleProbeBones();
@@ -119,16 +124,17 @@ public class AnimationSystem_v2 : MonoBehaviour
         CreatePlayableGraph();
         // RegisterCombatClips(); //optional, incomplete
 
-        _animator.applyRootMotion
-            = true;
+        _animator.applyRootMotion = true;
     }
 
     private void Update()
     {
         // 1. Update locomotion weights based on movement speed
         float speed = GetMovementSpeed();
-        UpdateLocomotionWeights(speed);
-
+        // UpdateLocomotionWeights(speed);
+        _movement.UpdateLocomotionBlends();
+        
+        
         // 2. Handle stance crossfade if in progress
         if (_targetStancePort != -1 && _blendTime < _stanceBlendDuration)
         {
@@ -163,6 +169,8 @@ public class AnimationSystem_v2 : MonoBehaviour
         }
 
         LogAnimationDebug(speed);
+
+
         
         // FixSpineRotation();
         
@@ -212,136 +220,38 @@ public class AnimationSystem_v2 : MonoBehaviour
         }
     }
 
-    // private void UpdateLocomotionWeights(float speed)
-    // {
-    //     bool shouldStrafe = isInGuard && (_combat.HasTarget || _input.targetLockTrigger);
-    //     float forwardSpeed = shouldStrafe ? 0f : Mathf.Clamp01(speed);
-    //     float strafeInput = _input.direction.x;
-    //
-    //     // ---- Forward movement (idle / walk / run) ----
-    //     float idle = 0f, walk = 0f, run = 0f;
-    //     if (forwardSpeed <= _runThreshold)
-    //     {
-    //         float t = _runThreshold > 0f ? forwardSpeed / _runThreshold : 0f;
-    //         idle = 1f - t;
-    //         walk = t;
-    //     }
-    //     else
-    //     {
-    //         float t = _runThreshold < 1f ? (forwardSpeed - _runThreshold) / (1f - _runThreshold) : 1f;
-    //         walk = 1f - t;
-    //         run = t;
-    //     }
-    //     _locomotionMixer.SetInputWeight(_idlePort, idle);
-    //     _locomotionMixer.SetInputWeight(_walkPort, walk);
-    //     _locomotionMixer.SetInputWeight(_runPort, run);
-    //
-    //     // ---- Strafe movement (overrides forward when active) ----
-    //     if (shouldStrafe)
-    //     {
-    //         float left = strafeInput < 0f ? -strafeInput : 0f;
-    //         float right = strafeInput > 0f ? strafeInput : 0f;
-    //         float total = left + right;
-    //
-    //         if (total > 0f)
-    //         {
-    //             left /= total;
-    //             right /= total;
-    //             // Disable forward locomotion while strafing
-    //             _locomotionMixer.SetInputWeight(_walkPort, 0f);
-    //             _locomotionMixer.SetInputWeight(_runPort, 0f);
-    //             _locomotionMixer.SetInputWeight(_idlePort, 0f);
-    //         }
-    //         else
-    //         {
-    //             // No strafe input – show idle (or guard idle)
-    //             left = 0f; right = 0f;
-    //             _locomotionMixer.SetInputWeight(_idlePort, 1f);
-    //         }
-    //         _locomotionMixer.SetInputWeight(_strafePortLeft, left);
-    //         _locomotionMixer.SetInputWeight(_strafePortRight, right);
-    //     }
-    //     else
-    //     {
-    //         _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
-    //         _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
-    //     }
-    // }
-
-    private bool ShouldStrafe()
+    public void UpdateLocomotionWeights(float speed)
     {
-        // Strafing only when hard locked onto a target AND in guard stance
-        return isInGuard && _combat != null && _combat.TargetLockMode == CombatTargetLockMode.Hard; // || _combat.TargetLockMode == CombatTargetLockMode.Soft;
-    }
+        float clampedSpeed = Mathf.Clamp01(speed);
+        float idleWeight = 0f, walkWeight = 0f, runWeight = 0f;
 
-    private void UpdateLocomotionWeights(float speed)
-    {
-        bool strafing = ShouldStrafe();
-
-        if (strafing)
+        if (clampedSpeed <= RunThreshold)
         {
-            // ---- Strafe mode: disable forward locomotion completely ----
-            _locomotionMixer.SetInputWeight(_idlePort, 0f);
-            _locomotionMixer.SetInputWeight(_walkPort, 0f);
-            _locomotionMixer.SetInputWeight(_runPort, 0f);
-            
-            // Get horizontal input (-1..1) and convert to left/right positive weights
-            float rawHoriz = _input.direction.x;
-            float leftWeight = Mathf.Max(0f, -rawHoriz);   // left when rawHoriz negative
-            float rightWeight = Mathf.Max(0f, rawHoriz);   // right when rawHoriz positive
-            
-            float total = leftWeight + rightWeight;
-            if (total > 0f)
-            {
-                // Normalize so left+right = 1 (full blend)
-                leftWeight /= total;
-                rightWeight /= total;
-                // (Optional) play a strafe idle if you have one, otherwise leave idle weight 0
-                _locomotionMixer.SetInputWeight(_strafePortLeft, leftWeight);
-                _locomotionMixer.SetInputWeight(_strafePortRight, rightWeight);
-            }
-            else
-            {
-                // No horizontal input – stay in a "guard idle" (use normal idle clip as fallback)
-                _locomotionMixer.SetInputWeight(_idlePort, 1f);
-                _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
-                _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
-            }
+            float t = RunThreshold > 0f ? clampedSpeed / RunThreshold : 0f;
+            idleWeight = 1 - t; // this sets idle to 1 - current input magnitude. Which is what fades between them
+            walkWeight = t;
         }
         else
         {
-            // ---- Normal locomotion (idle/walk/run) ----
-            _locomotionMixer.SetInputWeight(_strafePortLeft, 0f);
-            _locomotionMixer.SetInputWeight(_strafePortRight, 0f);
-            
-            float clampedSpeed = Mathf.Clamp01(speed);
-            float idleWeight = 0f, walkWeight = 0f, runWeight = 0f;
-            
-            if (clampedSpeed <= _runThreshold)
-            {
-                float t = _runThreshold > 0f ? clampedSpeed / _runThreshold : 0f;
-                idleWeight = 1 - t;
-                walkWeight = t;
-            }
-            else
-            {
-                float t = _runThreshold < 1f ? (clampedSpeed - _runThreshold) / (1f - _runThreshold) : 1f;
-                walkWeight = 1 - t;
-                runWeight = t;
-            }
-            
-            _locomotionMixer.SetInputWeight(_idlePort, idleWeight);
-            _locomotionMixer.SetInputWeight(_walkPort, walkWeight);
-            _locomotionMixer.SetInputWeight(_runPort, runWeight);
+            float t = RunThreshold < 1f ? (clampedSpeed - RunThreshold) / (1f - RunThreshold) : 1f;
+            walkWeight = 1 - t;
+            runWeight = t;
         }
+
+        _locomotionMixer.SetInputWeight(_idlePort, idleWeight);
+        _locomotionMixer.SetInputWeight(_walkPort, walkWeight);
+        _locomotionMixer.SetInputWeight(_runPort, runWeight);
+        
+        // UpdateStrafe(speed);
     }
-    
-    private float GetMovementSpeed()
+
+    public float GetMovementSpeed()
     {
         //TODO: change to GetComponent in Start
         return _input != null ? _input.moveAmount : 0f;
     }
 
+    
     
     public void SetFootIK(params AnimationClipPlayable[] clipPlayable)
     {
@@ -463,7 +373,6 @@ public class AnimationSystem_v2 : MonoBehaviour
         return AnimationClipPlayable.Create(_graph, GetPlayableClip(clip, label));
     }
 
-    
     private AnimationClip GetPlayableClip(AnimationClip clip, string label)
     {
         return CleanAnimClips.GetPlayableClip(
@@ -473,6 +382,7 @@ public class AnimationSystem_v2 : MonoBehaviour
             _debugAnimationWeights,
             this);
     }
+
 
     private void ConnectClipPlayable(AnimationClipPlayable playable, AnimationMixerPlayable mixer, int port, string label)
     {
